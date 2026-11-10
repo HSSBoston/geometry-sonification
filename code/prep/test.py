@@ -2,8 +2,7 @@ import pathlib, sys
 PRJ_DIR = pathlib.Path(__file__).resolve().parents[1] # 2 levels up
 sys.path.append(str(PRJ_DIR))
 
-import cv2
-import numpy as np
+import cv2, numpy as np
 
 DATA_DIR    = PRJ_DIR / "data" 
 OUTPUT_DIR = PRJ_DIR / "output"
