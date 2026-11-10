@@ -15,27 +15,19 @@ colorbar = cv2.imread(DATA_DIR / "NDVI_colorbar.png")
 palette = colorbar[125, 100:800]
 
 # Convert palette colors to LAB.
-paletteLab = cv2.cvtColor(
-    palette.reshape(1, -1, 3),
-    cv2.COLOR_BGR2LAB
-).reshape(-1, 3).astype(float)
+paletteLab = cv2.cvtColor(palette.reshape(1, -1, 3),
+                          cv2.COLOR_BGR2LAB).reshape(-1, 3).astype(float)
 
-def vegetation_score(bgr_pixel):
+def vegetationScore(bgr_pixel):
     pixel = np.uint8([[bgr_pixel]])
-
-    pixel_lab = cv2.cvtColor(
-        pixel, cv2.COLOR_BGR2LAB
-    )[0, 0].astype(float)
-
-    distances = np.linalg.norm(
-        palette_lab - pixel_lab,
-        axis=1
-    )
-
+    pixelLab = cv2.cvtColor(pixel, cv2.COLOR_BGR2LAB)[0, 0].astype(float)
+    
+    distances = np.linalg.norm(paletteLab - pixelLab, axis=1)
     index = np.argmin(distances)
-
     # Relative scale: 0 = low, 1 = high
-    score = index / (len(palette_lab) - 1)
-
+    score = index / (len(paletteLab) - 1)
     # Distance can also flag colors unlike the legend.
     return score, distances[index]
+
+if __name__ == "__main__":
+    
