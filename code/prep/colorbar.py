@@ -8,7 +8,7 @@ import numpy as np
 DATA_DIR    = PRJ_DIR / "data" 
 OUTPUT_DIR = PRJ_DIR / "output"
 
-colorbar = cv2.imread(DATA_DIR / "NDVI_colorbar.png")
+colorbar = cv2.imread(str(DATA_DIR / "NDVI_colorbar.png"))
 
 # Sample the middle of the colored gradient.
 # Approximate coordinates for NASA's 1000x250 legend.
@@ -18,7 +18,7 @@ palette = colorbar[125, 100:800]
 paletteLab = cv2.cvtColor(palette.reshape(1, -1, 3),
                           cv2.COLOR_BGR2LAB).reshape(-1, 3).astype(float)
 
-def vegetationScore(bgr_pixel):
+def pixel2vegetationScore(bgr_pixel):
     pixel = np.uint8([[bgr_pixel]])
     pixelLab = cv2.cvtColor(pixel, cv2.COLOR_BGR2LAB)[0, 0].astype(float)
     
@@ -30,4 +30,7 @@ def vegetationScore(bgr_pixel):
     return score, distances[index]
 
 if __name__ == "__main__":
-    
+    bgrPixel = colorbar[125, 450]
+    score, colorDistance = pixel2vegetationScore(bgrPixel)
+    print(f"Vegetation score: {score:.3f}")
+    print(f"Color distance: {colorDistance:.2f}")    
