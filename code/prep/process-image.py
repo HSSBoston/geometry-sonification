@@ -14,7 +14,7 @@ outputImage        = "20240801-32x16.png"
 outputBinaryMask   = "20240801-valid-mask.png"
 outputOverlay      = "20240801-valid-maskoverlay.png"
 outputNpz          = "20240801-griddata.npz"
-outputCsvGreeness  = "20240801-greenness.csv"
+outputCsvGreenness  = "20240801-greenness.csv"
 outputCsvFractions = "20240801-fractions.csv"
 
 ndviImage = cv2.imread(str(DATA_DIR / inputImage))
@@ -26,22 +26,25 @@ numRows = 16
 xEdges = np.linspace(0, width,  numCols + 1, dtype=int)
 yEdges = np.linspace(0, height, numRows + 1, dtype=int)
 
-cells = []
-for row in range(numRows):
-    rowCells = []
-    for col in range(numCols):
-        xStart, xEnd = xEdges[col], xEdges[col + 1]
-        yStart, yEnd = yEdges[row], yEdges[row + 1]
+firstCell = ndviImage[yEdges[0]:yEdges[1], xEdges[0]:xEdges[1]]
 
-        cell = ndviImage[yStart:yEnd, xStart:xEnd].copy()
-        rowCells.append(cell)
-
-    cells.append(rowCells)
+# cells = []
+# for row in range(numRows):
+#     rowCells = []
+#     for col in range(numCols):
+#         xStart, xEnd = xEdges[col], xEdges[col + 1]
+#         yStart, yEnd = yEdges[row], yEdges[row + 1]
+# 
+#         cell = ndviImage[yStart:yEnd, xStart:xEnd].copy()
+#         rowCells.append(cell)
+# 
+#     cells.append(rowCells)
 
 print(f"Image size: {width} x {height}")
 print(f"Grid size: {numCols} x {numRows}")
 print(f"Total cells: {numCols * numRows}")
-print(f"First cell size: {cells[0][0].shape}")
+print(f"First cell size: {firstCell.shape}")
+# print(f"First cell size: {cells[0][0].shape}")
 
 # Draw grid lines for visualization.
 gridImage = ndviImage.copy()
@@ -107,7 +110,9 @@ cv2.imwrite(str(OUTPUT_DIR / outputBinaryMask), validMask)
 print(outputBinaryMask, "saved.")
 
 overlayImage = ndviImage.copy()
-overlayImage[validMask == 0] = [0, 0, 255]  # rejected pixels shown in red
+rejected = (validMask == 0)
+overlayImage[rejected] = (0.5 * overlayImage[rejected] + 0.5 * np.array([0, 0, 255])).astype(np.uint8)
+# overlayImage[validMask == 0] = [0, 0, 255]  # rejected pixels shown in red
 cv2.imwrite(str(OUTPUT_DIR / outputOverlay), overlayImage)
 print(outputOverlay, "saved.")
 
@@ -116,9 +121,9 @@ np.savez( OUTPUT_DIR / outputNpz,
           validFractions= validFractions )
 print(outputNpz, "saved.")
 
-np.savetxt( OUTPUT_DIR / outputCsvGreeness,
+np.savetxt( OUTPUT_DIR / outputCsvGreenness,
             meanScores, delimiter=",", fmt="%.6f" )
-print(outputCsvGreeness, "saved.")
+print(outputCsvGreenness, "saved.")
 
 np.savetxt( OUTPUT_DIR / outputCsvFractions,
             validFractions, delimiter=",", fmt="%.6f" )
