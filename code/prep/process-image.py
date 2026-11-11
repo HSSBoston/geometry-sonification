@@ -14,8 +14,46 @@ outputImage        = "20240801-32x16.png"
 outputBinaryMask   = "20240801-valid-mask.png"
 outputOverlay      = "20240801-valid-maskoverlay.png"
 outputNpz          = "20240801-griddata.npz"
-outputCsvGreenness  = "20240801-greenness.csv"
+outputCsvGreenness = "20240801-greenness.csv"
 outputCsvFractions = "20240801-fractions.csv"
+outputMismatchMask = "20240801-color-mismatch.png"
+
+def inspectColorDistances(row, col, sampleStep=10):
+    cell = ndviImage[
+        yEdges[row]:yEdges[row + 1],
+        xEdges[col]:xEdges[col + 1]
+    ]
+
+    distances = []
+
+    for bgrPixel in cell[::sampleStep, ::sampleStep].reshape(-1, 3):
+        if (np.array_equal(bgrPixel, oceanBgr)
+            or np.array_equal(bgrPixel, whiteIceBgr)):
+            continue
+
+        snowDistance = np.linalg.norm(
+            bgrPixel.astype(np.int16) - snowBgrInt
+        )
+        if snowDistance <= maxSnowDistance:
+            continue
+
+        score, colorDistance = pixel2vegetationScore(bgrPixel)
+        distances.append(colorDistance)
+
+    if not distances:
+        print(f"Cell ({row}, {col}): No sampled land candidates")
+        return
+
+    distances = np.array(distances)
+
+    print(f"\nCell ({row}, {col})")
+    print("Median distance:", np.median(distances))
+    print("90th percentile:", np.percentile(distances, 90))
+
+    for threshold in [20, 25, 30, 35, 40]:
+        fraction = np.mean(distances <= threshold)
+        print(f"Threshold {threshold}: {fraction:.3f}")
+
 
 ndviImage = cv2.imread(str(DATA_DIR / inputImage))
 height, width = ndviImage.shape[:2]
@@ -59,9 +97,10 @@ cv2.imwrite(str(OUTPUT_DIR / outputImage), gridImage)
 print(outputImage, "saved.")
 
 # Compute vegetation statistics for each cell.
-meanScores = np.full((numRows, numCols), np.nan)
-validFractions = np.zeros((numRows, numCols))
-validMask = np.zeros((height, width), dtype=np.uint8)
+meanScores        = np.full((numRows, numCols), np.nan)
+validFractions    = np.zeros((numRows, numCols))
+validMask         = np.zeros((height, width), dtype=np.uint8)
+colorMismatchMask = np.zeros((height, width), dtype=np.uint8)
 
 maxColorDistance = 20.0     # Preliminary threshold; requires validation
 maxSnowDistance  = 8.0
@@ -69,6 +108,13 @@ oceanBgr = ndviImage[0, 0]  # Known ocean (top-left corner) pixel in the image
 snowBgr  = ndviImage[-1, 0] # known snow (bottom-left corner) pixel in the image
 snowBgrInt = snowBgr.astype(np.int16)
 whiteIceBgr = np.array([255, 255, 255], dtype=np.uint8)
+
+# Inspect representative regions
+inspectColorDistances(8, 10)   # Amazon rainforest
+inspectColorDistances(2, 19)   # Northern Russian forest
+inspectColorDistances(6, 16)   # Sahara Desert
+inspectColorDistances(1, 12)   # Greenland
+inspectColorDistances(14, 10)  # Antarctic region
 
 print("Processing row: ", end="")
 for row in range(numRows):
@@ -99,6 +145,8 @@ for row in range(numRows):
                     validScores.append(score)
                     validCount += 1
                     validMask[yStart + localY, xStart + localX] = 255
+                else:
+                    colorMismatchMask[yStart + localY, xStart + localX] = 255
 
         if validScores: meanScores[row, col] = np.mean(validScores)
         validFractions[row, col] = validCount / (cell.shape[0] * cell.shape[1])
@@ -108,6 +156,9 @@ print()
 
 cv2.imwrite(str(OUTPUT_DIR / outputBinaryMask), validMask)
 print(outputBinaryMask, "saved.")
+
+cv2.imwrite( str(OUTPUT_DIR / outputMismatchMask), colorMismatchMask)
+print(outputMismatchMask, "saved.")
 
 overlayImage = ndviImage.copy()
 rejected = (validMask == 0)
@@ -128,4 +179,5 @@ print(outputCsvGreenness, "saved.")
 np.savetxt( OUTPUT_DIR / outputCsvFractions,
             validFractions, delimiter=",", fmt="%.6f" )
 print(outputCsvFractions, "saved.")
+
 
