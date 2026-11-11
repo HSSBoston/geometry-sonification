@@ -9,20 +9,25 @@ DATA_DIR = PRJ_DIR / "data"
 OUTPUT_DIR = PRJ_DIR / "output"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-inputImage = "SNPP_VIIRS.20240801.ndvi_w_snow.oceanblue.png"
-outputImage        = "20240801-32x16.png"
-outputBinaryMask   = "20240801-valid-mask-d35.png"
-outputOverlay      = "20240801-valid-maskoverlay-d35.png"
-outputNpz          = "20240801-griddata-d35.npz"
-outputCsvGreenness = "20240801-greenness-d35.csv"
-outputCsvFractions = "20240801-fractions-d35.csv"
-outputMismatchMask = "20240801-color-mismatch-d35.png"
+imageDate = "20250201"
+
+inputImage         = f"SNPP_VIIRS.{imageDate}.ndvi_w_snow.oceanblue.png"
+outputImage        = f"{imageDate}-32x16.png"
+outputBinaryMask   = f"{imageDate}-valid-mask-d35.png"
+outputOverlay      = f"{imageDate}-valid-maskoverlay-d35.png"
+outputMismatchMask = f"{imageDate}-color-mismatch-d35.png"
+outputNpz          = f"{imageDate}-griddata-d35.npz"
+outputCsvGreenness = f"{imageDate}-greenness-d35.csv"
+outputCsvFractions = f"{imageDate}-fractions-d35.csv"
 
 def inspectColorDistances(row, col, sampleStep=10):
     cell = ndviImage[ yEdges[row]:yEdges[row + 1],
                       xEdges[col]:xEdges[col + 1] ]
-    samplePixels = cell[::sampleStep, ::sampleStep].reshape(-1, 3)
-    sampleCols   = cell[::sampleStep, ::sampleStep].shape[1]
+
+    sampledCell  = cell[::sampleStep, ::sampleStep]
+    samplePixels = sampledCell.reshape(-1, 3)
+    sampleCols   = sampledCell.shape[1]
+
     distances = []
     candidateColors = []
 
@@ -115,6 +120,9 @@ snowBgr  = ndviImage[-1, 0] # known snow (bottom-left corner) pixel in the image
 snowBgrInt = snowBgr.astype(np.int16)
 whiteIceBgr = np.array([255, 255, 255], dtype=np.uint8)
 
+print("Ocean BGR:", oceanBgr)
+print("Snow BGR:", snowBgr)
+
 antarcticSnowColors = np.array([
     [221, 229, 252],
     [217, 227, 250],
@@ -125,11 +133,13 @@ antarcticSnowColors = np.array([
 antarcticStartY = int(height * 150 / 180)
 
 # Inspect representative regions
-inspectColorDistances(8, 10)   # Amazon rainforest
-inspectColorDistances(2, 19)   # Northern Russian forest
-inspectColorDistances(6, 16)   # Sahara Desert
+inspectColorDistances(2, 5)    # Northern North America
+inspectColorDistances(2, 19)   # Northern Russian
 inspectColorDistances(1, 12)   # Greenland
-inspectColorDistances(14, 10)  # Antarctic region
+
+inspectColorDistances(8, 10)   # Amazon rainforest
+inspectColorDistances(6, 16)   # Sahara Desert
+inspectColorDistances(14, 10)  # Antarctica
 
 print("Processing row: ", end="")
 for row in range(numRows):
