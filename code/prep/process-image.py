@@ -23,6 +23,7 @@ def inspectColorDistances(row, col, sampleStep=10):
                       xEdges[col]:xEdges[col + 1] ]
     samplePixels = cell[::sampleStep, ::sampleStep].reshape(-1, 3)
     distances = []
+    candidateColors = []
 
     for bgrPixel in samplePixels:
         if (np.array_equal(bgrPixel, oceanBgr)
@@ -35,6 +36,7 @@ def inspectColorDistances(row, col, sampleStep=10):
 
         score, colorDistance = pixel2vegetationScore(bgrPixel)
         distances.append(colorDistance)
+        candidateColors.append(tuple(int(v) for v in bgrPixel))
 
     print(f"\nCell ({row}, {col})")
     print(f"Samples passing ocean/snow filters: {len(distances)} / {len(samplePixels)}")
@@ -44,8 +46,13 @@ def inspectColorDistances(row, col, sampleStep=10):
         print("No sampled land candidates")
         return
 
-    distances = np.array(distances)
+    if row == 14 and col == 10:
+        from collections import Counter
+        print("Most common candidate colors:")
+        for color, count in Counter(candidateColors).most_common(10):
+            print(color, count)
 
+    distances = np.array(distances)
     print("Median distance:", np.median(distances))
     print("90th percentile:", np.percentile(distances, 90))
 
@@ -88,7 +95,7 @@ validFractions    = np.zeros((numRows, numCols))
 validMask         = np.zeros((height, width), dtype=np.uint8)
 colorMismatchMask = np.zeros((height, width), dtype=np.uint8)
 
-maxColorDistance = 20.0
+maxColorDistance = 35.0
 maxSnowDistance  = 8.0
 oceanBgr = ndviImage[0, 0]  # Known ocean (top-left corner) pixel in the image
 snowBgr  = ndviImage[-1, 0] # known snow (bottom-left corner) pixel in the image
