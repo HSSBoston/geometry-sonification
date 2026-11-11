@@ -36,17 +36,18 @@ def inspectColorDistances(row, col, sampleStep=10):
         score, colorDistance = pixel2vegetationScore(bgrPixel)
         distances.append(colorDistance)
 
-    distances = np.array(distances)
-
     print(f"\nCell ({row}, {col})")
     print(f"Candidate samples: {len(distances)} / {len(samplePixels)}")
     print(f"Candidate fraction: {len(distances) / len(samplePixels):.3f}")
+
+    if len(distances) == 0:
+        print("No sampled land candidates")
+        return
+
+    distances = np.array(distances)
+
     print("Median distance:", np.median(distances))
     print("90th percentile:", np.percentile(distances, 90))
-
-    if not distances:
-        print(f"Cell ({row}, {col}): No sampled land candidates")
-        return
 
     for threshold in [20, 25, 30, 35, 40]:
         fraction = np.mean(distances <= threshold)
@@ -63,18 +64,6 @@ xEdges = np.linspace(0, width,  numCols + 1, dtype=int)
 yEdges = np.linspace(0, height, numRows + 1, dtype=int)
 
 firstCell = ndviImage[yEdges[0]:yEdges[1], xEdges[0]:xEdges[1]]
-
-# cells = []
-# for row in range(numRows):
-#     rowCells = []
-#     for col in range(numCols):
-#         xStart, xEnd = xEdges[col], xEdges[col + 1]
-#         yStart, yEnd = yEdges[row], yEdges[row + 1]
-# 
-#         cell = ndviImage[yStart:yEnd, xStart:xEnd].copy()
-#         rowCells.append(cell)
-# 
-#     cells.append(rowCells)
 
 print(f"Image size: {width} x {height}")
 print(f"Grid size: {numCols} x {numRows}")
