@@ -7,6 +7,7 @@ from colorbar import pixel2vegetationScore
 
 DATA_DIR = PRJ_DIR / "data"
 OUTPUT_DIR = PRJ_DIR / "output"
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 imageFileName  = "SNPP_VIIRS.20240801.ndvi_w_snow.oceanblue.png"
 outputFileName = "ndviGrid32x16.png"
@@ -46,7 +47,6 @@ for x in xEdges:
 for y in yEdges:
     cv2.line(gridImage, (0, int(y)), (width - 1, int(y)), (0, 0, 255), 2)
 
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 cv2.imwrite(str(OUTPUT_DIR / outputFileName), gridImage)
 print(outputFileName, "generated.")
 
@@ -68,11 +68,28 @@ for row in range(numRows):
                 continue
 
             score, colorDistance = pixel2vegetationScore(bgrPixel)
-
             if colorDistance <= maxColorDistance:
                 validScores.append(score)
 
-        if validScores:
-            meanScores[row, col] = np.mean(validScores)
-
+        if validScores: meanScores[row, col] = np.mean(validScores)
         validFractions[row, col] = len(validScores) / (cell.shape[0] * cell.shape[1])
+
+np.savez(
+    str(OUTPUT_DIR / "ndviGridData.npz"),
+    meanScores=meanScores,
+    validFractions=validFractions
+)
+
+np.savetxt(
+    OUTPUT_DIR / "meanScores.csv",
+    meanScores,
+    delimiter=",",
+    fmt="%.4f"
+)
+
+np.savetxt(
+    OUTPUT_DIR / "validFractions.csv",
+    validFractions,
+    delimiter=",",
+    fmt="%.4f"
+)
