@@ -37,7 +37,7 @@ def inspectColorDistances(row, col, sampleStep=10):
         distances.append(colorDistance)
 
     print(f"\nCell ({row}, {col})")
-    print(f"Candidate samples: {len(distances)} / {len(samplePixels)}")
+    print(f"Samples passing ocean/snow filters: {len(distances)} / {len(samplePixels)}")
     print(f"Candidate fraction: {len(distances) / len(samplePixels):.3f}")
 
     if len(distances) == 0:
@@ -69,7 +69,6 @@ print(f"Image size: {width} x {height}")
 print(f"Grid size: {numCols} x {numRows}")
 print(f"Total cells: {numCols * numRows}")
 print(f"First cell size: {firstCell.shape}")
-# print(f"First cell size: {cells[0][0].shape}")
 
 # Draw grid lines for visualization.
 gridImage = ndviImage.copy()
@@ -89,7 +88,7 @@ validFractions    = np.zeros((numRows, numCols))
 validMask         = np.zeros((height, width), dtype=np.uint8)
 colorMismatchMask = np.zeros((height, width), dtype=np.uint8)
 
-maxColorDistance = 20.0     # Preliminary threshold; requires validation
+maxColorDistance = 20.0
 maxSnowDistance  = 8.0
 oceanBgr = ndviImage[0, 0]  # Known ocean (top-left corner) pixel in the image
 snowBgr  = ndviImage[-1, 0] # known snow (bottom-left corner) pixel in the image
@@ -150,7 +149,6 @@ print(outputMismatchMask, "saved.")
 overlayImage = ndviImage.copy()
 rejected = (validMask == 0)
 overlayImage[rejected] = (0.5 * overlayImage[rejected] + 0.5 * np.array([0, 0, 255])).astype(np.uint8)
-# overlayImage[validMask == 0] = [0, 0, 255]  # rejected pixels shown in red
 cv2.imwrite(str(OUTPUT_DIR / outputOverlay), overlayImage)
 print(outputOverlay, "saved.")
 
