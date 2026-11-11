@@ -17,6 +17,13 @@ palette = colorbar[125, 102:798]
 paletteLab = cv2.cvtColor(palette.reshape(1, -1, 3),
                           cv2.COLOR_BGR2LAB).reshape(-1, 3).astype(float)
 
+# Takes a BGR pixel and returns:
+#   * the normalized vegetation score: [0,1]
+#   * the Euclidean distance between the pixel and the nearest color
+#     in the color bar: [0,~441]. Two colors are represented in OpenCV's 8-bit
+#     CIELAB color space. <5: small color difference. ~20: larger color difference.
+#     ~50: substantial color difference.
+#
 def pixel2vegetationScore(bgrPixel):
     pixel = np.uint8([[bgrPixel]])
     pixelLab = cv2.cvtColor(pixel, cv2.COLOR_BGR2LAB)[0, 0].astype(float)

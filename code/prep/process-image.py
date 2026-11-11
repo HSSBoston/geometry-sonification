@@ -50,29 +50,29 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 cv2.imwrite(str(OUTPUT_DIR / outputFileName), gridImage)
 print(outputFileName, "generated.")
 
-# # Compute vegetation statistics for each cell.
-# meanScores = np.full((numRows, numCols), np.nan)
-# validFractions = np.zeros((numRows, numCols))
-# 
-# maxColorDistance = 20.0  # Preliminary threshold; requires validation.
-# oceanBgr = ndviImage[0, 0]  # Known ocean pixel in this image.
-# 
-# for row in range(numRows):
-#     for col in range(numCols):
-#         cell = cells[row][col]
-#         validScores = []
-# 
-#         for bgrPixel in cell.reshape(-1, 3):
-#             # Exclude ocean pixels.
-#             if np.array_equal(bgrPixel, oceanBgr):
-#                 continue
-# 
-#             score, colorDistance = pixel2vegetationScore(bgrPixel)
-# 
-#             if colorDistance <= maxColorDistance:
-#                 validScores.append(score)
-# 
-#         if validScores:
-#             meanScores[row, col] = np.mean(validScores)
-# 
-#         validFractions[row, col] = len(validScores) / (cell.shape[0] * cell.shape[1])
+# Compute vegetation statistics for each cell.
+meanScores = np.full((numRows, numCols), np.nan)
+validFractions = np.zeros((numRows, numCols))
+
+maxColorDistance = 20.0    # Preliminary threshold; requires validation.
+oceanBgr = ndviImage[0, 0] # Known ocean pixel in this image.
+
+for row in range(numRows):
+    for col in range(numCols):
+        cell = cells[row][col]
+        validScores = []
+
+        for bgrPixel in cell.reshape(-1, 3):
+            # Exclude ocean pixels.
+            if np.array_equal(bgrPixel, oceanBgr):
+                continue
+
+            score, colorDistance = pixel2vegetationScore(bgrPixel)
+
+            if colorDistance <= maxColorDistance:
+                validScores.append(score)
+
+        if validScores:
+            meanScores[row, col] = np.mean(validScores)
+
+        validFractions[row, col] = len(validScores) / (cell.shape[0] * cell.shape[1])
