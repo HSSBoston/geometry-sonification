@@ -12,7 +12,7 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 inputImage = "SNPP_VIIRS.20240801.ndvi_w_snow.oceanblue.png"
 outputImage        = "20240801-32x16.png"
 outputNpz          = "20240801-griddata.npz"
-outputCsvGreeness  = "20240801-greeness.csv"
+outputCsvGreeness  = "20240801-greenness.csv"
 outputCsvFractions = "20240801-fractions.csv"
 
 ndviImage = cv2.imread(str(DATA_DIR / inputImage))
@@ -58,8 +58,10 @@ meanScores = np.full((numRows, numCols), np.nan)
 validFractions = np.zeros((numRows, numCols))
 
 maxColorDistance = 20.0     # Preliminary threshold; requires validation
+maxSnowDistance  = 8.0
 oceanBgr = ndviImage[0, 0]  # Known ocean (top-left corner) pixel in the image
 snowBgr  = ndviImage[-1, 0] # known snow (bottom-left corner) pixel in the image
+snowBgrInt = snowBgr.astype(np.int16)
 whiteIceBgr = np.array([255, 255, 255], dtype=np.uint8)
 
 print("Processing row: ", end="")
@@ -69,15 +71,15 @@ for row in range(numRows):
         validScores = []
 
         for bgrPixel in cell.reshape(-1, 3):
-            # Exclude ocean and snow/ice pixels.
+            # Exclude ocean and white ice pixels.
             if (np.array_equal(bgrPixel, oceanBgr)
-                or np.array_equal(bgrPixel, snowBgr)
                 or np.array_equal(bgrPixel, whiteIceBgr)):
                 continue
-            
-            snowDistance = np.linalg.norm(bgrPixel.astype(float) - snowBgr.astype(float))
-            if snowDistance <= 8:
-                continue        
+
+            # Exclude pixels close to the reference snow color.
+            snowDistance = np.linalg.norm(bgrPixel.astype(np.int16) - snowBgrInt)
+            if snowDistance <= maxSnowDistance:
+                continue
 
             score, colorDistance = pixel2vegetationScore(bgrPixel)
             if colorDistance <= maxColorDistance:
