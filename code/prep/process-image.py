@@ -100,10 +100,21 @@ colorMismatchMask = np.zeros((height, width), dtype=np.uint8)
 
 maxColorDistance = 35.0
 maxSnowDistance  = 8.0
+maxAntarcticSnowDistance = 4.0
+
 oceanBgr = ndviImage[0, 0]  # Known ocean (top-left corner) pixel in the image
 snowBgr  = ndviImage[-1, 0] # known snow (bottom-left corner) pixel in the image
 snowBgrInt = snowBgr.astype(np.int16)
 whiteIceBgr = np.array([255, 255, 255], dtype=np.uint8)
+
+antarcticSnowColors = np.array([
+    [221, 229, 252],
+    [217, 227, 250],
+    [211, 222, 247],
+    [208, 221, 246],
+    [215, 225, 249]
+], dtype=np.int16)
+antarcticStartY = int(height * 150 / 180)
 
 # Inspect representative regions
 inspectColorDistances(8, 10)   # Amazon rainforest
@@ -135,6 +146,13 @@ for row in range(numRows):
                 snowDistance = np.linalg.norm(bgrPixel.astype(np.int16) - snowBgrInt)
                 if snowDistance <= maxSnowDistance:
                     continue
+
+                imageY = yStart + localY
+                if imageY >= antarcticStartY:
+                    antarcticSnowDistance = np.min(
+                        np.linalg.norm(antarcticSnowColors - bgrPixel.astype(np.int16), axis=1))
+                    if antarcticSnowDistance <= maxAntarcticSnowDistance:
+                        continue
 
                 score, colorDistance = pixel2vegetationScore(bgrPixel)
                 if colorDistance <= maxColorDistance:
