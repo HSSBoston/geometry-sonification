@@ -9,10 +9,13 @@ DATA_DIR = PRJ_DIR / "data"
 OUTPUT_DIR = PRJ_DIR / "output"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-imageFileName  = "SNPP_VIIRS.20240801.ndvi_w_snow.oceanblue.png"
-outputFileName = "ndviGrid32x16.png"
+inputImage  = "SNPP_VIIRS.20240801.ndvi_w_snow.oceanblue.png"
+outputImage        = "20240801-32x16.png"
+outputNpz          = "20240801-griddata.npz"
+outputCsvGreeness  = "20240801-greeness.csv"
+outputCsvFractions = "20240801-fractions.csv"
 
-ndviImage = cv2.imread(str(DATA_DIR / imageFileName))
+ndviImage = cv2.imread(str(DATA_DIR / inputImage))
 height, width = ndviImage.shape[:2]
 
 # Divide the image into 32 columns and 16 rows.
@@ -47,8 +50,8 @@ for x in xEdges:
 for y in yEdges:
     cv2.line(gridImage, (0, int(y)), (width - 1, int(y)), (0, 0, 255), 2)
 
-cv2.imwrite(str(OUTPUT_DIR / outputFileName), gridImage)
-print(outputFileName, "generated.")
+cv2.imwrite(str(OUTPUT_DIR / outputImage), gridImage)
+print(outputImage, "saved.")
 
 # Compute vegetation statistics for each cell.
 meanScores = np.full((numRows, numCols), np.nan)
@@ -57,6 +60,7 @@ validFractions = np.zeros((numRows, numCols))
 maxColorDistance = 20.0    # Preliminary threshold; requires validation.
 oceanBgr = ndviImage[0, 0] # Known ocean pixel in this image.
 
+print("Processing row: ", end="")
 for row in range(numRows):
     for col in range(numCols):
         cell = cells[row][col]
@@ -73,23 +77,19 @@ for row in range(numRows):
 
         if validScores: meanScores[row, col] = np.mean(validScores)
         validFractions[row, col] = len(validScores) / (cell.shape[0] * cell.shape[1])
+    print(row, end=" ")
+print("")
 
-np.savez(
-    str(OUTPUT_DIR / "ndviGridData.npz"),
-    meanScores=meanScores,
-    validFractions=validFractions
-)
+np.savez( OUTPUT_DIR / outputNpz,
+          meanScores    = meanScores,
+          validFractions= validFractions )
+print(outputNpz, "saved.")
 
-np.savetxt(
-    OUTPUT_DIR / "meanScores.csv",
-    meanScores,
-    delimiter=",",
-    fmt="%.4f"
-)
+np.savetxt( OUTPUT_DIR / outputCsvGreeness,
+            meanScores, delimiter=",", fmt="%.4f" )
+print(outputCsvGreeness, "saved.")
 
-np.savetxt(
-    OUTPUT_DIR / "validFractions.csv",
-    validFractions,
-    delimiter=",",
-    fmt="%.4f"
-)
+np.savetxt( OUTPUT_DIR / outputCsvFractions,
+            validFractions, delimiter=",", fmt="%.4f" )
+print(outputCsvFractions, "saved.")
+
