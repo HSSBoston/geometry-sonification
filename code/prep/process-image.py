@@ -11,12 +11,12 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 inputImage = "SNPP_VIIRS.20240801.ndvi_w_snow.oceanblue.png"
 outputImage        = "20240801-32x16.png"
-outputBinaryMask   = "20240801-valid-mask.png"
-outputOverlay      = "20240801-valid-maskoverlay.png"
-outputNpz          = "20240801-griddata.npz"
-outputCsvGreenness = "20240801-greenness.csv"
-outputCsvFractions = "20240801-fractions.csv"
-outputMismatchMask = "20240801-color-mismatch.png"
+outputBinaryMask   = "20240801-valid-mask-d35.png"
+outputOverlay      = "20240801-valid-maskoverlay-d35.png"
+outputNpz          = "20240801-griddata-d35.npz"
+outputCsvGreenness = "20240801-greenness-d35.csv"
+outputCsvFractions = "20240801-fractions-d35.csv"
+outputMismatchMask = "20240801-color-mismatch-d35.png"
 
 def inspectColorDistances(row, col, sampleStep=10):
     cell = ndviImage[ yEdges[row]:yEdges[row + 1],
@@ -48,9 +48,12 @@ def inspectColorDistances(row, col, sampleStep=10):
 
     if row == 14 and col == 10:
         from collections import Counter
+        print("Reference snow BGR:", snowBgr)
         print("Most common candidate colors:")
+
         for color, count in Counter(candidateColors).most_common(10):
-            print(color, count)
+            snowDistance = np.linalg.norm( np.array(color, dtype=np.int16) - snowBgrInt )
+            print(color, count, f"Snow distance: {snowDistance:.2f}")
 
     distances = np.array(distances)
     print("Median distance:", np.median(distances))
