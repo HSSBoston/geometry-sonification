@@ -11,6 +11,8 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 inputImage = "SNPP_VIIRS.20240801.ndvi_w_snow.oceanblue.png"
 outputImage        = "20240801-32x16.png"
+outputBinaryMask   = "20240801-valid-mask.png"
+outputOverlay      = "20240801-valid-maskoverlay.png"
 outputNpz          = "20240801-griddata.npz"
 outputCsvGreeness  = "20240801-greenness.csv"
 outputCsvFractions = "20240801-fractions.csv"
@@ -56,6 +58,7 @@ print(outputImage, "saved.")
 # Compute vegetation statistics for each cell.
 meanScores = np.full((numRows, numCols), np.nan)
 validFractions = np.zeros((numRows, numCols))
+validMask = np.zeros((height, width), dtype=np.uint8)
 
 maxColorDistance = 20.0     # Preliminary threshold; requires validation
 maxSnowDistance  = 8.0
@@ -67,28 +70,46 @@ whiteIceBgr = np.array([255, 255, 255], dtype=np.uint8)
 print("Processing row: ", end="")
 for row in range(numRows):
     for col in range(numCols):
-        cell = cells[row][col]
+        xStart, xEnd = xEdges[col], xEdges[col + 1]
+        yStart, yEnd = yEdges[row], yEdges[row + 1]
+
+        cell = ndviImage[yStart:yEnd, xStart:xEnd]
         validScores = []
+        validCount = 0
 
-        for bgrPixel in cell.reshape(-1, 3):
-            # Exclude ocean and white ice pixels.
-            if (np.array_equal(bgrPixel, oceanBgr)
-                or np.array_equal(bgrPixel, whiteIceBgr)):
-                continue
+        for localY in range(cell.shape[0]):
+            for localX in range(cell.shape[1]):
+                bgrPixel = cell[localY, localX]
 
-            # Exclude pixels close to the reference snow color.
-            snowDistance = np.linalg.norm(bgrPixel.astype(np.int16) - snowBgrInt)
-            if snowDistance <= maxSnowDistance:
-                continue
+                # Exclude ocean and white ice pixels.
+                if (np.array_equal(bgrPixel, oceanBgr)
+                    or np.array_equal(bgrPixel, whiteIceBgr)):
+                    continue
 
-            score, colorDistance = pixel2vegetationScore(bgrPixel)
-            if colorDistance <= maxColorDistance:
-                validScores.append(score)
+                # Exclude pixels close to the reference snow color.
+                snowDistance = np.linalg.norm(bgrPixel.astype(np.int16) - snowBgrInt)
+                if snowDistance <= maxSnowDistance:
+                    continue
+
+                score, colorDistance = pixel2vegetationScore(bgrPixel)
+                if colorDistance <= maxColorDistance:
+                    validScores.append(score)
+                    validCount += 1
+                    validMask[yStart + localY, xStart + localX] = 255
 
         if validScores: meanScores[row, col] = np.mean(validScores)
-        validFractions[row, col] = len(validScores) / (cell.shape[0] * cell.shape[1])
+        validFractions[row, col] = validCount / (cell.shape[0] * cell.shape[1])
+
     print(row, end=" ")
-print("")
+print()
+
+cv2.imwrite(str(OUTPUT_DIR / outputBinaryMask), validMask)
+print(outputBinaryMask, "saved.")
+
+overlayImage = ndviImage.copy()
+overlayImage[validMask == 0] = [0, 0, 255]  # rejected pixels shown in red
+cv2.imwrite(str(OUTPUT_DIR / outputOverlay), overlayImage)
+print(outputOverlay, "saved.")
 
 np.savez( OUTPUT_DIR / outputNpz,
           meanScores    = meanScores,
@@ -96,10 +117,10 @@ np.savez( OUTPUT_DIR / outputNpz,
 print(outputNpz, "saved.")
 
 np.savetxt( OUTPUT_DIR / outputCsvGreeness,
-            meanScores, delimiter=",", fmt="%.4f" )
+            meanScores, delimiter=",", fmt="%.6f" )
 print(outputCsvGreeness, "saved.")
 
 np.savetxt( OUTPUT_DIR / outputCsvFractions,
-            validFractions, delimiter=",", fmt="%.4f" )
+            validFractions, delimiter=",", fmt="%.6f" )
 print(outputCsvFractions, "saved.")
 
