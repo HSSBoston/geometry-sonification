@@ -19,36 +19,34 @@ outputCsvFractions = "20240801-fractions.csv"
 outputMismatchMask = "20240801-color-mismatch.png"
 
 def inspectColorDistances(row, col, sampleStep=10):
-    cell = ndviImage[
-        yEdges[row]:yEdges[row + 1],
-        xEdges[col]:xEdges[col + 1]
-    ]
-
+    cell = ndviImage[ yEdges[row]:yEdges[row + 1],
+                      xEdges[col]:xEdges[col + 1] ]
+    samplePixels = cell[::sampleStep, ::sampleStep].reshape(-1, 3)
     distances = []
 
-    for bgrPixel in cell[::sampleStep, ::sampleStep].reshape(-1, 3):
+    for bgrPixel in samplePixels:
         if (np.array_equal(bgrPixel, oceanBgr)
             or np.array_equal(bgrPixel, whiteIceBgr)):
             continue
 
-        snowDistance = np.linalg.norm(
-            bgrPixel.astype(np.int16) - snowBgrInt
-        )
+        snowDistance = np.linalg.norm( bgrPixel.astype(np.int16) - snowBgrInt )
         if snowDistance <= maxSnowDistance:
             continue
 
         score, colorDistance = pixel2vegetationScore(bgrPixel)
         distances.append(colorDistance)
 
-    if not distances:
-        print(f"Cell ({row}, {col}): No sampled land candidates")
-        return
-
     distances = np.array(distances)
 
     print(f"\nCell ({row}, {col})")
+    print(f"Candidate samples: {len(distances)} / {len(samplePixels)}")
+    print(f"Candidate fraction: {len(distances) / len(samplePixels):.3f}")
     print("Median distance:", np.median(distances))
     print("90th percentile:", np.percentile(distances, 90))
+
+    if not distances:
+        print(f"Cell ({row}, {col}): No sampled land candidates")
+        return
 
     for threshold in [20, 25, 30, 35, 40]:
         fraction = np.mean(distances <= threshold)
