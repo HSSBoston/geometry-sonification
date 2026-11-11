@@ -22,10 +22,12 @@ def inspectColorDistances(row, col, sampleStep=10):
     cell = ndviImage[ yEdges[row]:yEdges[row + 1],
                       xEdges[col]:xEdges[col + 1] ]
     samplePixels = cell[::sampleStep, ::sampleStep].reshape(-1, 3)
+    sampleCols   = cell[::sampleStep, ::sampleStep].shape[1]
     distances = []
     candidateColors = []
 
-    for bgrPixel in samplePixels:
+    for sampleIndex, bgrPixel in enumerate(samplePixels):
+        imageY = yEdges[row] + (sampleIndex // sampleCols) * sampleStep
         if (np.array_equal(bgrPixel, oceanBgr)
             or np.array_equal(bgrPixel, whiteIceBgr)):
             continue
@@ -34,6 +36,12 @@ def inspectColorDistances(row, col, sampleStep=10):
         if snowDistance <= maxSnowDistance:
             continue
 
+        if imageY >= antarcticStartY:
+            antarcticSnowDistance = np.min(
+                np.linalg.norm( antarcticSnowColors - bgrPixel.astype(np.int16), axis=1 ))
+            if antarcticSnowDistance <= maxAntarcticSnowDistance:
+                continue
+    
         score, colorDistance = pixel2vegetationScore(bgrPixel)
         distances.append(colorDistance)
         candidateColors.append(tuple(int(v) for v in bgrPixel))
@@ -43,7 +51,7 @@ def inspectColorDistances(row, col, sampleStep=10):
     print(f"Candidate fraction: {len(distances) / len(samplePixels):.3f}")
 
     if len(distances) == 0:
-        print("No sampled land candidates")
+        print("No sampled pixels passed the exclusion filters")
         return
 
     if row == 14 and col == 10:
