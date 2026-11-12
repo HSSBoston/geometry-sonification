@@ -167,25 +167,39 @@ for row in range(numRows):
         for localY in range(cell.shape[0]):
             for localX in range(cell.shape[1]):
                 bgrPixel = cell[localY, localX]
+                imageY = yStart + localY
+                imageX = xStart + localX
 
                 # Exclude ocean pixels.
-                if np.array_equal(bgrPixel, oceanBgr): continue
+                if np.array_equal(bgrPixel, oceanBgr):
+                    continue
+
                 # Exclude white ice pixels.
                 if np.array_equal(bgrPixel, whiteIceBgr):
                     snowCount += 1
+                    snowMask[imageY, imageX] = 255
                     continue
+
                 # Exclude pixels close to the reference snow color.
-                snowDistance = np.linalg.norm( bgrPixel.astype(np.int16) - snowBgrInt )
+                snowDistance = np.linalg.norm(
+                    bgrPixel.astype(np.int16) - snowBgrInt
+                )
                 if snowDistance <= maxSnowDistance:
                     snowCount += 1
+                    snowMask[imageY, imageX] = 255
                     continue
+
                 # Additional Antarctic snow filtering.
-                imageY = yStart + localY
                 if imageY >= antarcticStartY:
                     antarcticSnowDistance = np.min(
-                        np.linalg.norm( antarcticSnowColors - bgrPixel.astype(np.int16), axis=1))
+                        np.linalg.norm(
+                            antarcticSnowColors - bgrPixel.astype(np.int16),
+                            axis=1
+                        )
+                    )
                     if antarcticSnowDistance <= maxAntarcticSnowDistance:
                         snowCount += 1
+                        snowMask[imageY, imageX] = 255
                         continue
 
                 # Classify vegetation pixels.
@@ -194,10 +208,10 @@ for row in range(numRows):
                 if colorDistance <= maxColorDistance:
                     validScores.append(score)
                     validCount += 1
-                    validMask[imageY, xStart + localX] = 255
+                    validMask[imageY, imageX] = 255
                 else:
-                    colorMismatchMask[imageY, xStart + localX] = 255
-
+                    colorMismatchMask[imageY, imageX] = 255
+            
         # Calculate cell-level statistics.
         if validScores:
             meanScores[row, col] = np.mean(validScores)
@@ -207,6 +221,7 @@ for row in range(numRows):
 
         validFractions[row, col] = validCount / numPixels
         snowFractions[row, col]  = snowCount / numPixels
+        assert np.isclose(maskSnowFraction, snowFractions[row, col])
 
     print(row, end=" ")
 print()
@@ -230,6 +245,7 @@ assert np.all(np.isnan(meanScores) == np.isnan(stdScores))
 assert np.all((validFractions >= 0) & (validFractions <= 1))
 assert np.all((snowFractions >= 0) & (snowFractions <= 1))
 assert np.all(validFractions + snowFractions <= 1.000001)
+assert not np.any((validMask > 0) & (snowMask > 0))
 
 print("Mean and standard deviation ranges:")
 print(np.nanmin(meanScores), np.nanmax(meanScores))
