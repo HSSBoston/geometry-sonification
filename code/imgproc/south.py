@@ -42,7 +42,7 @@ for name, values in (
     ("snowFractions", snowFractions),
     ("landFractions", landFractions)):
     if values.shape != (numRows, numCols):
-        raise ValueError(f"{name}'s shape:{values.shape}; expected ({numRows}, {numRows})")
+        raise ValueError(f"{name}'s shape:{values.shape}; expected ({numRows}, {numCols})")
 
 assert np.all(np.isfinite(validFractions))
 assert np.all(np.isfinite(snowFractions))
@@ -66,9 +66,17 @@ latWeights = np.cos(np.deg2rad(latCenters))
 
 regionMeanScores =     np.full(numRegions, np.nan)
 regionStdScores =      np.full(numRegions, np.nan)
+regionLandGreenness    = np.full(numRegions, np.nan)
+regionLandGreennessStd = np.full(numRegions, np.nan)
 regionValidFractions = np.zeros(numRegions)
 regionSnowFractions =  np.zeros(numRegions)
 regionLandFractions =  np.zeros(numRegions)
+
+areaWeights = np.broadcast_to(
+    latWeights[southStartRow:, np.newaxis],
+    (numRows - southStartRow, colsPerRegion)
+)
+totalAreaWeight = np.sum(areaWeights)
 
 for region in range(numRegions):
     colStart = region * colsPerRegion
@@ -81,12 +89,92 @@ for region in range(numRegions):
     snow  = snowFractions[regionSlice]
     land  = landFractions[regionSlice]
 
-    # Equal longitude widths; repeat latitude-area weights over the 4 columns.
-    areaWeights = np.broadcast_to( 
-        latWeights[southStartRow:, np.newaxis], valid.shape)
-    totalAreaWeight = np.sum(areaWeights)
-
     # All three fractions use the entire mapped region as their denominator.
     regionValidFractions[region] = np.sum(areaWeights * valid) / totalAreaWeight
     regionSnowFractions[region] = np.sum(areaWeights * snow) / totalAreaWeight
     regionLandFractions[region] = np.sum(areaWeights * land) / totalAreaWeight
+
+    # Land-adjusted greenness and standard deviation.
+    # Snow/ice is treated as zero greenness; ocean is excluded.
+    totalLandWeight = np.sum(areaWeights * land)
+
+    if totalLandWeight > 0:
+        totalGreenness = np.nansum(areaWeights * valid * means)
+
+        regionLandMean = totalGreenness / totalLandWeight
+        regionLandGreenness[region] = regionLandMean
+
+        # Second moment, including within-cell greenness variation.
+        totalSecondMoment = np.nansum(
+            areaWeights * valid * (stds**2 + means**2)
+        )
+
+        regionLandVariance = (
+            totalSecondMoment / totalLandWeight - regionLandMean**2
+        )
+
+        regionLandGreennessStd[region] = np.sqrt(
+            max(regionLandVariance, 0.0)
+        )
+
+    # Weight greenness by both latitude and valid-pixel coverage.
+    greennessWeights = areaWeights * valid
+    # Include only cells containing accepted greenness data.
+    usable = (greennessWeights > 0) & np.isfinite(means) & np.isfinite(stds)
+    if not np.any(usable):
+        continue
+
+    weights = greennessWeights[usable]
+    cellMeans = means[usable]
+    cellStds = stds[usable]
+
+    # Regional mean greenness
+    regionMean = np.average(cellMeans, weights=weights)
+    regionMeanScores[region] = regionMean
+    # Regional variance: within-cell + between-cell variation.
+    regionVariance = np.average(
+        cellStds**2 + (cellMeans - regionMean)**2,
+        weights=weights)
+    regionStdScores[region] = np.sqrt(regionVariance)    
+
+# Region numbers and longitude boundaries.
+regionNumbers = np.arange(1, numRegions + 1)
+longitudeWidth = 360.0 / numRegions
+
+longitudeStarts = -180.0 + np.arange(numRegions) * longitudeWidth
+longitudeEnds = longitudeStarts + longitudeWidth
+
+np.savez(OUTPUT_DIR / outputNpz,
+         regionMeanScores=regionMeanScores,
+         regionStdScores=regionStdScores,
+         regionLandGreenness=regionLandGreenness,
+         regionLandGreennessStd=regionLandGreennessStd,
+         regionValidFractions=regionValidFractions,
+         regionSnowFractions=regionSnowFractions,
+         regionLandFractions=regionLandFractions,
+         longitudeStarts=longitudeStarts,
+         longitudeEnds=longitudeEnds)
+print(outputNpz, "saved.")
+
+# Combine regional statistics into one table.
+outputData = np.column_stack([
+    regionNumbers,
+    longitudeStarts,
+    longitudeEnds,
+    regionMeanScores,
+    regionStdScores,
+    regionLandGreenness,
+    regionLandGreennessStd,
+    regionValidFractions,
+    regionSnowFractions,
+    regionLandFractions])
+# Save CSV with column headers.
+np.savetxt(OUTPUT_DIR / outputCsv,
+           outputData, delimiter=",",
+           header=("region,longitudeStart,longitudeEnd,meanScore,stdScore,"
+                   "landGreenness,landGreennessStd,validFraction,"
+                   "snowFraction,landFraction"),
+           comments="",
+           fmt=["%d", "%.1f", "%.1f"] + ["%.6f"] * 7)
+print(outputCsv, "saved.")
+
