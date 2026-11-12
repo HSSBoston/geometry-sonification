@@ -4,22 +4,23 @@ sys.path.append(str(PRJ_DIR))
 
 import numpy as np
 
-DATA_DIR = PRJ_DIR / "data" / "greenness"
+DATA_DIR   = PRJ_DIR / "data" / "greenness"
 OUTPUT_DIR = PRJ_DIR / "data" / "sonif-input"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 imageDate = "20240801"
-# imageDate = "20250201"
-
-inputNpz  = f"{imageDate}-griddata-d35.npz"
-outputNpz = f"{imageDate}-south-regions-d35.npz"
-outputCsv = f"{imageDate}-south-regions-d35.csv"
+#imageDate = "20250201"
 
 numRows = 16
 numCols = 32
 colsPerRegion = 4
 southStartRow = numRows // 2
 numRegions = numCols // colsPerRegion
+
+inputNpz  = f"{imageDate}-griddata-d35.npz"
+outputNpz = f"{imageDate}-south-regions-{colsPerRegion}col.npz"
+outputCsv = f"{imageDate}-south-regions-{colsPerRegion}col.csv"
+
 
 # Load the five 16 x 32 statistics produced by process-image.py.
 with np.load(DATA_DIR / inputNpz) as data:
@@ -64,13 +65,13 @@ assert np.all((stdScores[np.isfinite(stdScores)] >= 0) &
 latCenters = 90.0 - (np.arange(numRows) + 0.5) * (180.0 / numRows)
 latWeights = np.cos(np.deg2rad(latCenters))
 
-regionMeanScores =     np.full(numRegions, np.nan)
-regionStdScores =      np.full(numRegions, np.nan)
+regionMeanScores       = np.full(numRegions, np.nan)
+regionStdScores        = np.full(numRegions, np.nan)
 regionLandGreenness    = np.full(numRegions, np.nan)
 regionLandGreennessStd = np.full(numRegions, np.nan)
-regionValidFractions = np.zeros(numRegions)
-regionSnowFractions =  np.zeros(numRegions)
-regionLandFractions =  np.zeros(numRegions)
+regionValidFractions   = np.zeros(numRegions)
+regionSnowFractions    = np.zeros(numRegions)
+regionLandFractions    = np.zeros(numRegions)
 
 areaWeights = np.broadcast_to(
     latWeights[southStartRow:, np.newaxis],
