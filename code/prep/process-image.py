@@ -9,7 +9,8 @@ DATA_DIR = PRJ_DIR / "data"
 OUTPUT_DIR = PRJ_DIR / "output"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-imageDate = "20250201"
+imageDate = "20240801"
+#imageDate = "20250201"
 
 inputImage         = f"SNPP_VIIRS.{imageDate}.ndvi_w_snow.oceanblue.png"
 outputImage        = f"{imageDate}-32x16.png"
@@ -23,10 +24,13 @@ outputCsvGreenness = f"{imageDate}-greenness-d35.csv"
 outputCsvStdScores = f"{imageDate}-std-scores-d35.csv"
 outputCsvValidFractions = f"{imageDate}-valid-fractions-d35.csv"
 outputCsvSnowFractions  = f"{imageDate}-snow-fractions-d35.csv"
+outputCsvLandFractions  = f"{imageDate}-land-fractions-d35.csv"
 
 # Valid fraction: Fraction of pixels accepted for greenness estimation,
 #                 excluding snow/ice, ocean, and palette mismatches
 # Snow fraction: Fraction of pixels classified as snow/ice
+# Land fraction: Fraction of pixels for land or snow/ice, excluding
+#                ocean (valid + snow)
 
 def inspectColorDistances(row, col, sampleStep=10):
     cell = ndviImage[ yEdges[row]:yEdges[row + 1],
@@ -221,7 +225,6 @@ for row in range(numRows):
 
         validFractions[row, col] = validCount / numPixels
         snowFractions[row, col]  = snowCount / numPixels
-        assert np.isclose(maskSnowFraction, snowFractions[row, col])
 
     print(row, end=" ")
 print()
@@ -241,23 +244,28 @@ overlayImage[rejected] = (0.5 * overlayImage[rejected] + 0.5 * np.array([0, 0, 2
 cv2.imwrite(str(OUTPUT_DIR / outputOverlay), overlayImage)
 print(outputOverlay, "saved.")
 
+landFractions = validFractions + snowFractions
+
 assert np.all(np.isnan(meanScores) == np.isnan(stdScores))
 assert np.all((validFractions >= 0) & (validFractions <= 1))
 assert np.all((snowFractions >= 0) & (snowFractions <= 1))
 assert np.all(validFractions + snowFractions <= 1.000001)
 assert not np.any((validMask > 0) & (snowMask > 0))
+assert np.all((landFractions >= 0) & (landFractions <= 1.000001))
 
 print("Mean and standard deviation ranges:")
 print(np.nanmin(meanScores), np.nanmax(meanScores))
 print(np.nanmin(stdScores), np.nanmax(stdScores))
 print("Mean valid fraction:", np.mean(validFractions))
 print("Mean snow fraction:", np.mean(snowFractions))
+print("Mean land fraction:", np.mean(landFractions))
 
 np.savez( OUTPUT_DIR / outputNpz,
           meanScores=meanScores,
           stdScores=stdScores,
           validFractions=validFractions,
-          snowFractions=snowFractions)
+          snowFractions=snowFractions,
+          landFractions=landFractions)
 print(outputNpz, "saved.")
 
 np.savetxt( OUTPUT_DIR / outputCsvGreenness,
@@ -276,4 +284,7 @@ np.savetxt( OUTPUT_DIR / outputCsvSnowFractions,
             snowFractions, delimiter=",", fmt="%.6f" )
 print(outputCsvSnowFractions, "saved.")
 
+np.savetxt( OUTPUT_DIR / outputCsvLandFractions,
+            landFractions, delimiter=",", fmt="%.6f" )
+print(outputCsvSnowFractions, "saved.")
 
