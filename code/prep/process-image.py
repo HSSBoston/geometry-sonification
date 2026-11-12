@@ -286,5 +286,5 @@ print(outputCsvSnowFractions, "saved.")
 
 np.savetxt( OUTPUT_DIR / outputCsvLandFractions,
             landFractions, delimiter=",", fmt="%.6f" )
-print(outputCsvSnowFractions, "saved.")
+print(outputCsvLandFractions, "saved.")
 
