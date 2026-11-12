@@ -16,9 +16,12 @@ outputImage        = f"{imageDate}-32x16.png"
 outputBinaryMask   = f"{imageDate}-valid-mask-d35.png"
 outputOverlay      = f"{imageDate}-valid-maskoverlay-d35.png"
 outputMismatchMask = f"{imageDate}-color-mismatch-d35.png"
-outputNpz          = f"{imageDate}-griddata-d35.npz"
-outputCsvGreenness = f"{imageDate}-greenness-d35.csv"
-outputCsvFractions = f"{imageDate}-fractions-d35.csv"
+
+outputNpz              = f"{imageDate}-griddata-d35.npz"
+outputCsvGreenness     = f"{imageDate}-greenness-d35.csv"
+outputCsvLandFractions = f"{imageDate}-land-fractions-d35.csv"
+outputCsvStdScores     = f"{imageDate}-std-scores-d35.csv"
+outputCsvSnowFractions = f"{imageDate}-snow-fractions-d35.csv"
 
 def inspectColorDistances(row, col, sampleStep=10):
     cell = ndviImage[ yEdges[row]:yEdges[row + 1],
@@ -107,7 +110,10 @@ print(outputImage, "saved.")
 
 # Compute vegetation statistics for each cell.
 meanScores        = np.full((numRows, numCols), np.nan)
+stdScores         = np.full((numRows, numCols), np.nan)
 validFractions    = np.zeros((numRows, numCols))
+snowFractions     = np.zeros((numRows, numCols))
+
 validMask         = np.zeros((height, width), dtype=np.uint8)
 colorMismatchMask = np.zeros((height, width), dtype=np.uint8)
 
@@ -150,38 +156,51 @@ for row in range(numRows):
         cell = ndviImage[yStart:yEnd, xStart:xEnd]
         validScores = []
         validCount = 0
+        snowCount  = 0
 
         for localY in range(cell.shape[0]):
             for localX in range(cell.shape[1]):
                 bgrPixel = cell[localY, localX]
 
-                # Exclude ocean and white ice pixels.
-                if (np.array_equal(bgrPixel, oceanBgr)
-                    or np.array_equal(bgrPixel, whiteIceBgr)):
+                # Exclude ocean pixels.
+                if np.array_equal(bgrPixel, oceanBgr): continue
+                # Exclude white ice pixels.
+                if np.array_equal(bgrPixel, whiteIceBgr):
+                    snowCount += 1
                     continue
-
                 # Exclude pixels close to the reference snow color.
-                snowDistance = np.linalg.norm(bgrPixel.astype(np.int16) - snowBgrInt)
+                snowDistance = np.linalg.norm( bgrPixel.astype(np.int16) - snowBgrInt )
                 if snowDistance <= maxSnowDistance:
+                    snowCount += 1
                     continue
-
+                # Additional Antarctic snow filtering.
                 imageY = yStart + localY
                 if imageY >= antarcticStartY:
                     antarcticSnowDistance = np.min(
-                        np.linalg.norm(antarcticSnowColors - bgrPixel.astype(np.int16), axis=1))
+                        np.linalg.norm( antarcticSnowColors - bgrPixel.astype(np.int16), axis=1))
                     if antarcticSnowDistance <= maxAntarcticSnowDistance:
+                        snowCount += 1
                         continue
 
+                # Classify vegetation pixels.
                 score, colorDistance = pixel2vegetationScore(bgrPixel)
+
                 if colorDistance <= maxColorDistance:
                     validScores.append(score)
                     validCount += 1
-                    validMask[yStart + localY, xStart + localX] = 255
+                    validMask[imageY, xStart + localX] = 255
                 else:
-                    colorMismatchMask[yStart + localY, xStart + localX] = 255
+                    colorMismatchMask[imageY, xStart + localX] = 255
 
-        if validScores: meanScores[row, col] = np.mean(validScores)
-        validFractions[row, col] = validCount / (cell.shape[0] * cell.shape[1])
+        # Calculate cell-level statistics.
+        if validScores:
+            meanScores[row, col] = np.mean(validScores)
+            stdScores[row, col]  = np.std(validScores)
+
+        numPixels = cell.shape[0] * cell.shape[1]
+
+        validFractions[row, col] = validCount / numPixels
+        snowFractions[row, col]  = snowCount / numPixels
 
     print(row, end=" ")
 print()
@@ -198,17 +217,37 @@ overlayImage[rejected] = (0.5 * overlayImage[rejected] + 0.5 * np.array([0, 0, 2
 cv2.imwrite(str(OUTPUT_DIR / outputOverlay), overlayImage)
 print(outputOverlay, "saved.")
 
+assert np.all(np.isnan(meanScores) == np.isnan(stdScores))
+assert np.all((validFractions >= 0) & (validFractions <= 1))
+assert np.all((snowFractions >= 0) & (snowFractions <= 1))
+assert np.all(validFractions + snowFractions <= 1.000001)
+
+print("Mean and standard deviation ranges:")
+print(np.nanmin(meanScores), np.nanmax(meanScores))
+print(np.nanmin(stdScores), np.nanmax(stdScores))
+print("Mean valid (land) fraction:", np.mean(validFractions))
+print("Mean snow fraction:", np.mean(snowFractions))
+
 np.savez( OUTPUT_DIR / outputNpz,
-          meanScores    = meanScores,
-          validFractions= validFractions )
+          meanScores=meanScores,
+          stdScores=stdScores,
+          validFractions=validFractions,
+          snowFractions=snowFractions)
 print(outputNpz, "saved.")
 
 np.savetxt( OUTPUT_DIR / outputCsvGreenness,
             meanScores, delimiter=",", fmt="%.6f" )
 print(outputCsvGreenness, "saved.")
 
-np.savetxt( OUTPUT_DIR / outputCsvFractions,
+np.savetxt( OUTPUT_DIR / outputCsvLandFractions,
             validFractions, delimiter=",", fmt="%.6f" )
-print(outputCsvFractions, "saved.")
+print(outputCsvLandFractions, "saved.")
 
+np.savetxt( OUTPUT_DIR / outputCsvStdScores,
+            stdScores, delimiter=",", fmt="%.6f" )
+print(outputCsvStdScores, "saved.")
+
+np.savetxt( OUTPUT_DIR / outputCsvSnowFractions,
+            snowFractions, delimiter=",", fmt="%.6f" )
+print(outputCsvSnowFractions, "saved.")
 
