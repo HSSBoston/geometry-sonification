@@ -16,12 +16,17 @@ outputImage        = f"{imageDate}-32x16.png"
 outputBinaryMask   = f"{imageDate}-valid-mask-d35.png"
 outputOverlay      = f"{imageDate}-valid-maskoverlay-d35.png"
 outputMismatchMask = f"{imageDate}-color-mismatch-d35.png"
+outputSnowMask     = f"{imageDate}-snow-mask-d35.png"
 
-outputNpz              = f"{imageDate}-griddata-d35.npz"
-outputCsvGreenness     = f"{imageDate}-greenness-d35.csv"
-outputCsvLandFractions = f"{imageDate}-land-fractions-d35.csv"
-outputCsvStdScores     = f"{imageDate}-std-scores-d35.csv"
-outputCsvSnowFractions = f"{imageDate}-snow-fractions-d35.csv"
+outputNpz          = f"{imageDate}-griddata-d35.npz"
+outputCsvGreenness = f"{imageDate}-greenness-d35.csv"
+outputCsvStdScores = f"{imageDate}-std-scores-d35.csv"
+outputCsvValidFractions = f"{imageDate}-valid-fractions-d35.csv"
+outputCsvSnowFractions  = f"{imageDate}-snow-fractions-d35.csv"
+
+# Valid fraction: Fraction of pixels accepted for greenness estimation,
+#                 excluding snow/ice, ocean, and palette mismatches
+# Snow fraction: Fraction of pixels classified as snow/ice
 
 def inspectColorDistances(row, col, sampleStep=10):
     cell = ndviImage[ yEdges[row]:yEdges[row + 1],
@@ -109,12 +114,13 @@ cv2.imwrite(str(OUTPUT_DIR / outputImage), gridImage)
 print(outputImage, "saved.")
 
 # Compute vegetation statistics for each cell.
-meanScores        = np.full((numRows, numCols), np.nan)
-stdScores         = np.full((numRows, numCols), np.nan)
-validFractions    = np.zeros((numRows, numCols))
-snowFractions     = np.zeros((numRows, numCols))
+meanScores     = np.full((numRows, numCols), np.nan)
+stdScores      = np.full((numRows, numCols), np.nan)
+validFractions = np.zeros((numRows, numCols))
+snowFractions  = np.zeros((numRows, numCols))
 
 validMask         = np.zeros((height, width), dtype=np.uint8)
+snowMask          = np.zeros((height, width), dtype=np.uint8)
 colorMismatchMask = np.zeros((height, width), dtype=np.uint8)
 
 maxColorDistance = 35.0
@@ -205,11 +211,14 @@ for row in range(numRows):
     print(row, end=" ")
 print()
 
-cv2.imwrite(str(OUTPUT_DIR / outputBinaryMask), validMask)
+cv2.imwrite(str(OUTPUT_DIR / outputBinaryMask), validMask )
 print(outputBinaryMask, "saved.")
 
-cv2.imwrite( str(OUTPUT_DIR / outputMismatchMask), colorMismatchMask)
+cv2.imwrite( str(OUTPUT_DIR / outputMismatchMask), colorMismatchMask )
 print(outputMismatchMask, "saved.")
+
+cv2.imwrite( str(OUTPUT_DIR / outputSnowMask), snowMask )
+print(outputSnowMask, "saved.")
 
 overlayImage = ndviImage.copy()
 rejected = (validMask == 0)
@@ -225,7 +234,7 @@ assert np.all(validFractions + snowFractions <= 1.000001)
 print("Mean and standard deviation ranges:")
 print(np.nanmin(meanScores), np.nanmax(meanScores))
 print(np.nanmin(stdScores), np.nanmax(stdScores))
-print("Mean valid (land) fraction:", np.mean(validFractions))
+print("Mean valid fraction:", np.mean(validFractions))
 print("Mean snow fraction:", np.mean(snowFractions))
 
 np.savez( OUTPUT_DIR / outputNpz,
@@ -239,9 +248,9 @@ np.savetxt( OUTPUT_DIR / outputCsvGreenness,
             meanScores, delimiter=",", fmt="%.6f" )
 print(outputCsvGreenness, "saved.")
 
-np.savetxt( OUTPUT_DIR / outputCsvLandFractions,
+np.savetxt( OUTPUT_DIR / outputCsvValidFractions,
             validFractions, delimiter=",", fmt="%.6f" )
-print(outputCsvLandFractions, "saved.")
+print(outputCsvValidFractions, "saved.")
 
 np.savetxt( OUTPUT_DIR / outputCsvStdScores,
             stdScores, delimiter=",", fmt="%.6f" )
@@ -250,4 +259,5 @@ print(outputCsvStdScores, "saved.")
 np.savetxt( OUTPUT_DIR / outputCsvSnowFractions,
             snowFractions, delimiter=",", fmt="%.6f" )
 print(outputCsvSnowFractions, "saved.")
+
 
