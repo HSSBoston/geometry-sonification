@@ -2,6 +2,7 @@
 data/
 input/
 output/
+orbichord-source/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
