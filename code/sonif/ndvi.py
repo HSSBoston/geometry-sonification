@@ -1,9 +1,9 @@
 import pathlib, csv, numpy as np
-from constants import DATA_DIR
+from constants import DATA_SONIF_DIR
 
 def calculateNdviDistances(imageDate):
     inputCsv = f"{imageDate}-south-regions-chords.csv"
-    with open(DATA_DIR / inputCsv, newline="") as file:
+    with open(DATA_SONIF_DIR / inputCsv, newline="") as file:
         rows = list(csv.DictReader(file))
 
     # Extract land-adjusted greenness

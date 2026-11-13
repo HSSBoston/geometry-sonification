@@ -13,7 +13,7 @@ from music21.scale import ChromaticScale
 from orbichord.chordinate import standardSimplex, EfficientVoiceLeading, Permutation
 import plotly.graph_objects as go
 
-OUTPUT_DIR = PRJ_DIR / "output" / "orbifold"
+OUTPUT_DIR = PRJ_DIR / "data" / "orbifold"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 outputHtml = OUTPUT_DIR / "orbifold-cmajor-six-triads.html"

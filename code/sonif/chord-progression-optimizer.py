@@ -1,14 +1,7 @@
-import pathlib, sys
-PRJ_DIR = pathlib.Path(__file__).resolve().parents[1]  # 2 levels up
-sys.path.append(str(PRJ_DIR))
-
 import numpy as np
 from itertools import product
-from music21.chord import Chord
-from music21.scale import ChromaticScale
-from orbichord.chordinate import EfficientVoiceLeading, Permutation
 
-from constants
+import constants
 from ndvi import calculateNdviDistances
 from orbifold import calculateOrbifoldDistances
 
@@ -18,14 +11,7 @@ stateIndices = {state: index for index, state in enumerate(states)}
 firstChord = "I"
 cadence = ("V", "I")
 
-# Diatonic triads in C major.
-chords = {
-    "I":   Chord("C E G"),
-    "II":  Chord("D F A"),
-    "IV":  Chord("F A C"),
-    "V":   Chord("G B D"),
-    "VI":  Chord("A C E"),
-    "VII": Chord("B D F") }
+
 
 # Calculate E_geometory.
 #   progression: list of chords expressed as roman numerals; e.g., ["I", "IV", "V"]
@@ -62,8 +48,7 @@ def optimizeProgression(ndviDistances, orbifoldDistances):
         # orbifoldDistances: shape (6,6)
         # orbifoldDistances[np.newaxis, :, :]: shape (1,6,6)
         # transitionErrors: share (10,6,6). A stack of 10 6x6 matrices.
-        
-
+    
     bestProgression = None
     bestGeometryError = float("inf")
     count = 0

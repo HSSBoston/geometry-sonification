@@ -1,6 +1,8 @@
+import numpy as np
+from orbichord.chordinate import EfficientVoiceLeading, Permutation
+from music21.scale import ChromaticScale
 
-
-
+from constants import CHORDS
 
 def calculateOrbifoldDistances(states):
     # Euclidean voice-leading distance in chromatic pitch-class space
@@ -14,7 +16,7 @@ def calculateOrbifoldDistances(states):
 
     for i, stateA in enumerate(states):
         for j, stateB in enumerate(states):
-            movement, distance = voiceLeading( chords[stateA], chords[stateB] )
+            movement, distance = voiceLeading( CHORDS[stateA], CHORDS[stateB] )
             distances[i, j] = distance
 
     # Verify basic distance properties.
