@@ -27,13 +27,12 @@ chords = {
     "VI":  Chord("A C E"),
     "VII": Chord("B D F") }
 
-
-
-
+# Calculate E_geometory.
+#   progression: list of chords expressed as roman numerals; e.g., ["I", "IV", "V"]
+#   transitionErrors[i, a, b]: squared mismatch between the environmental target at
+#     chord state transition i and the orbifold distance from chord state a to chord state b
+#
 def calculateGeometryError(progression, transitionErrors):
-    # transitionErrors[i, a, b] is the squared mismatch between
-    # the environmental target at transition i and the orbifold
-    # distance from chord state a to chord state b.
     stateSequence = [stateIndices[state] for state in progression]
 
     totalError = 0.0
@@ -41,7 +40,6 @@ def calculateGeometryError(progression, transitionErrors):
     for i in range(len(stateSequence) - 1):
         stateA = stateSequence[i]
         stateB = stateSequence[i + 1]
-
         totalError += transitionErrors[i, stateA, stateB]
 
     return totalError / (len(stateSequence) - 1)
@@ -52,58 +50,47 @@ def optimizeProgression(ndviDistances, orbifoldDistances):
     numFreeChords = numChordEvents - 1 - len(cadence)
 
     if numFreeChords < 0:
-        raise ValueError("Not enough chord events for the cadence.")
+        raise ValueError("Not enough chord events for chord progression generation.")
 
-    # Precompute squared geometry errors for every transition
-    # and every possible pair of chord states.
-    #
-    # Shape: (numChordEvents - 1, 6, 6)
+    # Precompute squared geometry errors for every chord state transition
+    # and every possible pair of chord states
+    #   Shape: (numChordEvents-1, 6, 6)
     transitionErrors = (
-        ndviDistances[:, np.newaxis, np.newaxis]
-        - orbifoldDistances[np.newaxis, :, :]
-    ) ** 2
+        ndviDistances[:, np.newaxis, np.newaxis] - orbifoldDistances[np.newaxis, :, :]) ** 2
 
     bestProgression = None
     bestGeometryError = float("inf")
     count = 0
 
-    # Exhaustively enumerate all progressions satisfying
-    # the fixed opening and ending cadence.
+    # Enumerate all progressions satisfying the fixed opening and ending cadence
     for middleChords in product(states, repeat=numFreeChords):
         progression = (firstChord,) + middleChords + cadence
 
-        eGeometry = calculateGeometryError(
-            progression, transitionErrors
-        )
-
+        eGeometry = calculateGeometryError(progression, transitionErrors)        
         if eGeometry < bestGeometryError:
             bestGeometryError = eGeometry
             bestProgression = progression
-
+        
         count += 1
-
     return bestProgression, bestGeometryError, count
 
 
-# Compute the fixed orbifold distance matrix once.
-normalizedOrbifoldDistances = calculateOrbifoldDistances()
-
+# Compute the orbifold distance matrix
+normalizedOrbifoldDistances = calculateOrbifoldDistances(states)
 print("Normalized orbifold distance matrix:")
 print(np.round(normalizedOrbifoldDistances, 3))
 
-# Optimize chord progressions for each date.
-for imageDate in imageDates:
+# Optimize chord progressions for each date
+for imageDate in constants.IMAGE_DATES:
     print(f"\nProcessing {imageDate}")
 
     normalizedNdviDistances = calculateNdviDistances(imageDate)
-
     print("\nNormalized NDVI spatial-gradient distances:")
     print(np.round(normalizedNdviDistances, 4))
 
     bestProgression, bestGeometryError, count = optimizeProgression(
         normalizedNdviDistances,
-        normalizedOrbifoldDistances
-    )
+        normalizedOrbifoldDistances )
 
     print("\nTotal progressions evaluated:", count)
     print("Best chord progression:", bestProgression)
