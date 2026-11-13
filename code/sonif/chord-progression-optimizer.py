@@ -11,8 +11,9 @@ stateIndices = {state: index for index, state in enumerate(states)}
 firstChord = "I"
 cadence = ("V", "I")
 
-wGeometry = 1.0
-wHarmony = 0.5
+wGeometry    = 1.0
+wHarmony     = 1.0
+wAlternation = 0.05
 
 # Markov state transition probabilities
 P = np.array(
@@ -63,6 +64,19 @@ def calculateHarmonyError(progression, harmonyErrors):
 
     return totalError / (len(stateSequence) - 1)
 
+# Calculate E_alternation. Penalize extended A-B-A-B alteration patterns in the chord progression.
+#   progression: list of chords expressed as roman numerals; e.g., ["I", "IV", "V"]
+#
+def calculateAlternationError(progression):
+    numAlternations = 0
+
+    for i in range(len(progression) - 3):
+        if (progression[i] == progression[i + 2] and
+            progression[i + 1] == progression[i + 3] and
+            progression[i] != progression[i + 1]):
+            numAlternations += 1
+
+    return numAlternations / max(len(progression) - 3, 1)
 
 def optimizeProgression(ndviDistances, orbifoldDistances, transitionProbabilities):
     numChordEvents = len(ndviDistances) + 1
@@ -86,10 +100,11 @@ def optimizeProgression(ndviDistances, orbifoldDistances, transitionProbabilitie
     #   Shape: (6,6)
     harmonyErrors = 1.0 - transitionProbabilities
 
-    bestProgression   = None
-    bestGeometryError = float("inf")
-    bestHarmonyError  = float("inf")
-    bestTotalError    = float("inf")
+    bestProgression      = None
+    bestGeometryError    = float("inf")
+    bestHarmonyError     = float("inf")
+    bestAlternationError = float("inf")
+    bestTotalError       = float("inf")
     count = 0
 
     # Enumerate all progressions satisfying the fixed opening and ending cadence
@@ -98,12 +113,16 @@ def optimizeProgression(ndviDistances, orbifoldDistances, transitionProbabilitie
 
         eGeometry = calculateGeometryError(progression, transitionErrors)
         eHarmony = calculateHarmonyError(progression, harmonyErrors)
-        eTotal = wGeometry * eGeometry + wHarmony * eHarmony
+        eAlternation = calculateAlternationError(progression)
+
+#        eTotal = wGeometry * eGeometry + wHarmony * eHarmony
+        eTotal = wGeometry * eGeometry + wHarmony * eHarmony + wAlternation * eAlternation
 
         if eTotal < bestTotalError:
             bestTotalError    = eTotal
             bestGeometryError = eGeometry
             bestHarmonyError  = eHarmony
+            bestAlternationError = eAlternation
             bestProgression   = progression
 
         count += 1
@@ -122,6 +141,7 @@ print(P)
 print("\nOptimization weights:")
 print("wGeometry:", wGeometry)
 print("wHarmony:",  wHarmony)
+print("wAlternation:",  wAlternation)
 
 # Optimize chord progressions for each date
 for imageDate in IMAGE_DATES:
@@ -140,6 +160,7 @@ for imageDate in IMAGE_DATES:
     print("Best chord progression:", bestProgression)
     print("E_geometry:", bestGeometryError)
     print("E_harmony:", bestHarmonyError)
+    print("E_alternation:", bestAlternationError)
     print("E_total:", bestTotalError)
 
     # Display realized orbifold distances of the best progression
