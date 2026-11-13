@@ -12,7 +12,7 @@ firstChord = "I"
 cadence = ("V", "I")
 
 wGeometry = 1.0
-wHarmony = 1.0
+wHarmony = 0.5
 
 # Markov state transition probabilities
 P = np.array(
@@ -21,8 +21,7 @@ P = np.array(
      [0.2,  0.2,  0,    0.2,  0.2,  0.2],
      [0.45, 0,    0,    0,    0.45, 0.1],
      [0,    0.3,  0.3,  0.3,  0,    0.1],
-     [1,    0,    0,    0,    0,    0]]
-)
+     [1,    0,    0,    0,    0,    0]] )
 
 assert P.shape == (len(states), len(states))
 assert np.all((P >= 0) & (P <= 1))
@@ -48,8 +47,9 @@ def calculateGeometryError(progression, transitionErrors):
 
 
 # Calculate E_harmony.
-#   harmonyErrors[a, b]: harmonic error for transitioning from
-#     chord state a to chord state b, defined as 1 - P[a, b]
+#   progression: list of chords expressed as roman numerals; e.g., ["I", "IV", "V"]
+#   harmonyErrors[a, b]: harmonic error for transitioning from chord state a to
+#     chord state b, defined as 1 - P[a, b]
 #
 def calculateHarmonyError(progression, harmonyErrors):
     stateSequence = [stateIndices[state] for state in progression]
@@ -86,10 +86,10 @@ def optimizeProgression(ndviDistances, orbifoldDistances, transitionProbabilitie
     #   Shape: (6,6)
     harmonyErrors = 1.0 - transitionProbabilities
 
-    bestProgression = None
+    bestProgression   = None
     bestGeometryError = float("inf")
-    bestHarmonyError = float("inf")
-    bestTotalError = float("inf")
+    bestHarmonyError  = float("inf")
+    bestTotalError    = float("inf")
     count = 0
 
     # Enumerate all progressions satisfying the fixed opening and ending cadence
@@ -101,10 +101,10 @@ def optimizeProgression(ndviDistances, orbifoldDistances, transitionProbabilitie
         eTotal = wGeometry * eGeometry + wHarmony * eHarmony
 
         if eTotal < bestTotalError:
-            bestTotalError = eTotal
+            bestTotalError    = eTotal
             bestGeometryError = eGeometry
-            bestHarmonyError = eHarmony
-            bestProgression = progression
+            bestHarmonyError  = eHarmony
+            bestProgression   = progression
 
         count += 1
 
@@ -121,7 +121,7 @@ print(P)
 
 print("\nOptimization weights:")
 print("wGeometry:", wGeometry)
-print("wHarmony:", wHarmony)
+print("wHarmony:",  wHarmony)
 
 # Optimize chord progressions for each date
 for imageDate in IMAGE_DATES:
