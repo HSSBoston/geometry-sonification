@@ -16,6 +16,8 @@ import plotly.graph_objects as go
 OUTPUT_DIR = PRJ_DIR / "output" / "orbifold"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+outputHtml = OUTPUT_DIR / "orbifold-cmajor-six-triads.html"
+
 states = ("I", "II", "IV", "V", "VI", "VII")
 stateIndices = {state: index for index, state in enumerate(states)}
 
@@ -69,6 +71,17 @@ for i, stateA in enumerate(states):
 maxOrbifoldDistance = np.max(orbifoldDistances)
 normalizedOrbifoldDistances = orbifoldDistances / maxOrbifoldDistance
 
+assert len(chordData) == 6
+assert np.allclose(orbifoldDistances, orbifoldDistances.T)
+assert np.allclose(np.diag(orbifoldDistances), 0)
+assert np.isclose(maxOrbifoldDistance, np.sqrt(12))
+
+print("\nOrbifold distance matrix:")
+print(np.round(orbifoldDistances, 3))
+
+print("\nNormalized orbifold distance matrix:")
+print(np.round(normalizedOrbifoldDistances, 3))
+
 fig = go.Figure()
 
 # Define the six vertices of the triangular prism.
@@ -98,8 +111,7 @@ fig.add_trace( go.Mesh3d( x=[v[0] for v in vertices],
                           hoverinfo="skip",
                           showlegend=False ))
 
-# Plot the C-major diatonic triads as labeled blue points.
-# Plot diatonic triads with colors by chord quality.
+# Plot the six diatonic triads with colors by chord quality.
 colors = {
     "major triad": "royalblue",
     "minor triad": "seagreen",
@@ -167,7 +179,7 @@ fig.add_trace(go.Scatter3d(
 
 # Improve layout.
 fig.update_layout(
-    title="Six C-Major Diatonic Triads in the Three-Pitch Orbifold",
+    title="Six C-Major Triads in the 3-Pitch Orbifold",
     width=1150,
     height=850,
     scene=dict(
@@ -179,13 +191,13 @@ fig.update_layout(
         camera=dict(eye=dict(x=1.8, y=1.5, z=1.2))
     ))
 
-
+# Highlight selected chord pairs with straight-line visual guides.
+# These segments are NOT shortest paths through the orbifold.
+# The legend shows the actual distances calculated by Orbichord.
 pairsToHighlight = [
     ("IV", "VI"),
     ("IV", "V"),
-    ("V", "I")
-]
-
+    ("V", "I") ]
 pairColors = ["seagreen", "crimson", "royalblue"]
 
 for (stateA, stateB), color in zip(pairsToHighlight, pairColors):
@@ -209,6 +221,7 @@ for (stateA, stateB), color in zip(pairsToHighlight, pairColors):
               f"normalized={normalizedDistance:.3f}")
     ))
 
+fig.write_html(str(outputHtml))
+print(f"Saved: {outputHtml}")
 
-fig.write_html()
 fig.show(renderer="browser")
