@@ -52,8 +52,8 @@ def optimizeProgression(ndviDistances, orbifoldDistances):
     if numFreeChords < 0:
         raise ValueError("Not enough chord events for chord progression generation.")
 
-    # Precompute squared geometry errors for every chord state transition
-    # and every possible pair of chord states
+    # For each chord state transition, precompute the squared geometry error for
+    # every possible pair of chord states
     #   Shape: (numChordEvents-1, 6, 6)
     transitionErrors = (
         ndviDistances[:, np.newaxis, np.newaxis] - orbifoldDistances[np.newaxis, :, :]) ** 2
