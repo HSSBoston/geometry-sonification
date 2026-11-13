@@ -1,6 +1,4 @@
-
 import numpy as np
-
 from music21.chord import Chord
 from music21.scale import ChromaticScale
 from orbichord.chordinate import EfficientVoiceLeading, Permutation
@@ -15,16 +13,14 @@ chords = {
     "IV":  Chord("F A C"),
     "V":   Chord("G B D"),
     "VI":  Chord("A C E"),
-    "VII": Chord("B D F")
-}
+    "VII": Chord("B D F") }
 
 # Calculate minimum Euclidean voice-leading distances
 # in the chromatic pitch-class orbifold.
 voiceLeading = EfficientVoiceLeading(
     scale=ChromaticScale("C"),
     metric=lambda delta: np.linalg.norm(delta, ord=2),
-    permutation=Permutation.ANY
-)
+    permutation=Permutation.ANY )
 
 # Construct the 6 x 6 orbifold distance matrix.
 numStates = len(states)
@@ -32,14 +28,10 @@ orbifoldDistances = np.zeros((numStates, numStates))
 
 for i, stateA in enumerate(states):
     for j, stateB in enumerate(states):
-        movement, distance = voiceLeading(
-            chords[stateA],
-            chords[stateB]
-        )
+        movement, distance = voiceLeading( chords[stateA], chords[stateB] )
         orbifoldDistances[i, j] = distance
 
-# Normalize using the maximum distance
-# within the fixed six-chord vocabulary.
+# Normalize using the maximum distance within the fixed six-chord vocabulary.
 maxOrbifoldDistance = np.max(orbifoldDistances)
 
 normalizedOrbifoldDistances = (
