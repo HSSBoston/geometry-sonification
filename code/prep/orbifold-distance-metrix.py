@@ -34,9 +34,7 @@ for i, stateA in enumerate(states):
 # Normalize using the maximum distance within the fixed six-chord vocabulary.
 maxOrbifoldDistance = np.max(orbifoldDistances)
 
-normalizedOrbifoldDistances = (
-    orbifoldDistances / maxOrbifoldDistance
-)
+normalizedOrbifoldDistances = orbifoldDistances / maxOrbifoldDistance
 
 # Verify fundamental distance properties.
 assert np.allclose(orbifoldDistances, orbifoldDistances.T)
