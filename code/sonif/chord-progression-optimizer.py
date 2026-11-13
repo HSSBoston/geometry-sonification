@@ -57,6 +57,12 @@ def optimizeProgression(ndviDistances, orbifoldDistances):
     #   Shape: (numChordEvents-1, 6, 6)
     transitionErrors = (
         ndviDistances[:, np.newaxis, np.newaxis] - orbifoldDistances[np.newaxis, :, :]) ** 2
+        # ndviDistances: shape (10,)
+        # ndviDistances[:, np.newaxis, np.newaxis]: shape (10,1,1)
+        # orbifoldDistances: shape (6,6)
+        # orbifoldDistances[np.newaxis, :, :]: shape (1,6,6)
+        # transitionErrors: share (10,6,6). A stack of 10 6x6 matrices.
+        
 
     bestProgression = None
     bestGeometryError = float("inf")
