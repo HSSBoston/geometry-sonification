@@ -155,10 +155,8 @@ def saveAdaptiveRegions(imageDate, adaptiveRows):
                f"duration={row['durationBeats']}  "
                f"land={float(row['landFraction']):.4f}" )
 
-# Process each date.
 for imageDate in imageDates:
     print(f"\nProcessing {imageDate}")
-
     coarseRows = loadRegionCsv(imageDate, coarseCols)
     fineRows   = loadRegionCsv(imageDate, fineCols)
 
