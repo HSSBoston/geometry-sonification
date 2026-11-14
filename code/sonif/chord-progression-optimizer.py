@@ -14,7 +14,7 @@ cadences = (
     ("II", "V", "I") )
 
 wGeometry    = 1.0
-wHarmony     = 0.4
+wHarmony     = 0.5
 
 # Markov state transition probabilities
 P = np.array(
@@ -176,6 +176,7 @@ for imageDate in IMAGE_DATES:
     print("Valid progressions after alternation filtering:", validCount)
 
     print("Best chord progression:", bestProgression)
+    print("Selected cadence:", bestCadence)
     print("E_geometry:", bestGeometryError)
     print("E_harmony:", bestHarmonyError)
     print("E_total:", bestTotalError)
