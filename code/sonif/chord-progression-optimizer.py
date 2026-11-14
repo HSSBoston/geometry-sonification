@@ -9,7 +9,9 @@ states = ("I", "II", "IV", "V", "VI", "VII")
 stateIndices = {state: index for index, state in enumerate(states)}
 
 firstChord = "I"
-cadence = ("V", "I")
+cadences = (
+    ("IV", "V", "I"),
+    ("II", "V", "I") )
 
 wGeometry    = 1.0
 wHarmony     = 0.4
@@ -80,10 +82,6 @@ def calculateAlternationError(progression):
 
 def optimizeProgression(ndviDistances, orbifoldDistances, transitionProbabilities):
     numChordEvents = len(ndviDistances) + 1
-    numFreeChords = numChordEvents - 1 - len(cadence)
-
-    if numFreeChords < 0:
-        raise ValueError("Not enough chord events for chord progression generation.")
 
     # For each chord state transition, precompute the squared geometry error for
     # every possible pair of chord states
@@ -98,6 +96,7 @@ def optimizeProgression(ndviDistances, orbifoldDistances, transitionProbabilitie
     harmonyErrors = 1.0 - transitionProbabilities
 
     bestProgression   = None
+    bestCadence       = None
     bestGeometryError = float("inf")
     bestHarmonyError  = float("inf")
     bestTotalError    = float("inf")
@@ -106,41 +105,47 @@ def optimizeProgression(ndviDistances, orbifoldDistances, transitionProbabilitie
     markovValidCount = 0
     validCount = 0
 
-    # Enumerate all progressions satisfying the fixed opening and ending cadence
-    for middleChords in product(states, repeat=numFreeChords):
-        progression = (firstChord,) + middleChords + cadence
-        count += 1
+    # Enumerate all progressions satisfying the fixed opening and a selected cadence
+    for cadence in cadences:
+        numFreeChords = numChordEvents - 1 - len(cadence)
 
-        stateSequence = [stateIndices[state] for state in progression]
+        if numFreeChords < 0:
+            raise ValueError("Not enough chord events for the selected cadence.")
 
-        # Eliminate progressions containing zero-probability transitions
-        if any(not validTransitions[stateSequence[i], stateSequence[i + 1]]
-               for i in range(len(stateSequence) - 1)):
-            continue
+        for middleChords in product(states, repeat=numFreeChords):
+            progression = (firstChord,) + middleChords + cadence
+            count += 1
 
-        markovValidCount += 1
+            stateSequence = [stateIndices[state] for state in progression]
 
-        # Eliminate progressions containing extended A-B-A-B alternation patterns
-        if calculateAlternationError(progression) > 0:
-            continue
+            # Eliminate progressions containing zero-probability transitions
+            if any(not validTransitions[stateSequence[i], stateSequence[i + 1]]
+                   for i in range(len(stateSequence) - 1)):
+                continue
 
-        validCount += 1
+            markovValidCount += 1
 
-        eGeometry = calculateGeometryError(progression, transitionErrors)
-        eHarmony = calculateHarmonyError(progression, harmonyErrors)
+            # Eliminate progressions containing extended A-B-A-B alternation patterns
+            if calculateAlternationError(progression) > 0:
+                continue
 
-        eTotal = wGeometry * eGeometry + wHarmony * eHarmony
+            validCount += 1
 
-        if eTotal < bestTotalError:
-            bestTotalError    = eTotal
-            bestGeometryError = eGeometry
-            bestHarmonyError  = eHarmony
-            bestProgression   = progression
+            eGeometry = calculateGeometryError(progression, transitionErrors)
+            eHarmony = calculateHarmonyError(progression, harmonyErrors)
 
-    if bestProgression is None:
-        raise ValueError("No valid chord progressions found.")
+            eTotal = wGeometry * eGeometry + wHarmony * eHarmony
 
-    return (bestProgression, bestGeometryError, bestHarmonyError,
+            if eTotal < bestTotalError:
+                bestTotalError    = eTotal
+                bestGeometryError = eGeometry
+                bestHarmonyError  = eHarmony
+                bestProgression   = progression
+                bestCadence       = cadence
+
+    if bestProgression is None: raise ValueError("No valid chord progressions found.")
+
+    return (bestProgression, bestCadence, bestGeometryError, bestHarmonyError,
             bestTotalError, count, markovValidCount, validCount)
 
 
@@ -160,7 +165,7 @@ for imageDate in IMAGE_DATES:
     print("\nNormalized NDVI spatial-gradient distances:")
     print(np.round(normalizedNdviDistances, 4))
 
-    (bestProgression, bestGeometryError, bestHarmonyError,
+    (bestProgression, bestCadence, bestGeometryError, bestHarmonyError,
      bestTotalError, count, markovValidCount, validCount) = optimizeProgression(
         normalizedNdviDistances,
         normalizedOrbifoldDistances,
