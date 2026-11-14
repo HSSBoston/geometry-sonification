@@ -69,15 +69,18 @@ def generateCandidatePitches(chordState):
             candidatePitches.append(midi)
     return candidatePitches
 
+def calculateRegisterError(candidatePitch, landGreenness):
+    greennessAnchors = [0.0, 0.35, 0.55, 1.0]
+    pitchAnchors     = [48,  60,   72,   83]
+    preferredPitch = np.interp(landGreenness, greennessAnchors, pitchAnchors)
+    return ((candidatePitch - preferredPitch) / 12.0) ** 2
+
 # Calculate the pitch-selection objective.
-# To be implemented later. Potential components:
-#   E_register
-#   E_contour
-#   E_movement
 #
-def calculatePitchError(candidatePitch, melodyEvent, previousPitch):
-    # TODO: Implement pitch-selection objective.
-    return None
+def calculatePitchError(candidatePitch, melodyEvent, previousPitch, previousEvent):
+
+    eRegister = calculateRegisterError( candidatePitch, melodyEvent["landGreenness"] )
+
 
 
 # Evaluate every candidate and retain the lowest-error pitch.
