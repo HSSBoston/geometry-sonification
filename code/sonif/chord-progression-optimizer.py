@@ -17,12 +17,12 @@ wAlternation = 0.05
 
 # Markov state transition probabilities
 P = np.array(
-    [[0,    0.25, 0.25, 0.25, 0.25, 0],
-     [0.2,  0,    0,    0.3,  0.3,  0.2],
-     [0.2,  0.2,  0,    0.2,  0.2,  0.2],
-     [0.45, 0,    0,    0,    0.45, 0.1],
-     [0,    0.3,  0.3,  0.3,  0,    0.1],
-     [1,    0,    0,    0,    0,    0]] )
+    [[0.02, 0.245, 0.245, 0.245, 0.245, 0],
+     [0.2,  0,     0,     0.3,   0.3,   0.2],
+     [0.2,  0.2,   0,     0.2,   0.2,   0.2],
+     [0.45, 0,     0,     0,     0.45,  0.1],
+     [0,    0.3,   0.3,   0.3,   0,     0.1],
+     [1,    0,     0,     0,     0,     0]] )
 
 assert P.shape == (len(states), len(states))
 assert np.all((P >= 0) & (P <= 1))
@@ -78,6 +78,7 @@ def calculateAlternationError(progression):
 
     return numAlternations / max(len(progression) - 3, 1)
 
+
 def optimizeProgression(ndviDistances, orbifoldDistances, transitionProbabilities):
     numChordEvents = len(ndviDistances) + 1
     numFreeChords = numChordEvents - 1 - len(cadence)
@@ -96,8 +97,10 @@ def optimizeProgression(ndviDistances, orbifoldDistances, transitionProbabilitie
         # orbifoldDistances[np.newaxis, :, :]: shape (1,6,6)
         # transitionErrors: shape (10,6,6). A stack of 10 6x6 matrices.
 
-    # Precompute harmony errors for all chord state transitions
+    # Precompute harmony errors for all chord state transitions.
+    # Zero-probability transitions are prohibited.
     #   Shape: (6,6)
+    validTransitions = transitionProbabilities > 0
     harmonyErrors = 1.0 - transitionProbabilities
 
     bestProgression      = None
@@ -105,40 +108,52 @@ def optimizeProgression(ndviDistances, orbifoldDistances, transitionProbabilitie
     bestHarmonyError     = float("inf")
     bestAlternationError = float("inf")
     bestTotalError       = float("inf")
+
     count = 0
+    validCount = 0
 
     # Enumerate all progressions satisfying the fixed opening and ending cadence
     for middleChords in product(states, repeat=numFreeChords):
         progression = (firstChord,) + middleChords + cadence
+        count += 1
+
+        stateSequence = [stateIndices[state] for state in progression]
+
+        # Eliminate progressions containing zero-probability transitions
+        if any(not validTransitions[stateSequence[i], stateSequence[i + 1]]
+               for i in range(len(stateSequence) - 1)):
+            continue
+
+        validCount += 1
 
         eGeometry = calculateGeometryError(progression, transitionErrors)
         eHarmony = calculateHarmonyError(progression, harmonyErrors)
         eAlternation = calculateAlternationError(progression)
 
-#        eTotal = wGeometry * eGeometry + wHarmony * eHarmony
-        eTotal = wGeometry * eGeometry + wHarmony * eHarmony + wAlternation * eAlternation
+        eTotal = (wGeometry * eGeometry +
+                  wHarmony * eHarmony +
+                  wAlternation * eAlternation)
 
         if eTotal < bestTotalError:
-            bestTotalError    = eTotal
-            bestGeometryError = eGeometry
-            bestHarmonyError  = eHarmony
+            bestTotalError       = eTotal
+            bestGeometryError    = eGeometry
+            bestHarmonyError     = eHarmony
             bestAlternationError = eAlternation
-            bestProgression   = progression
+            bestProgression      = progression
 
-        count += 1
+    if bestProgression is None:
+        raise ValueError("No valid chord progressions found.")
 
-    return bestProgression, bestGeometryError, bestHarmonyError, bestTotalError, count
+    return (bestProgression, bestGeometryError, bestHarmonyError,
+            bestAlternationError, bestTotalError, count, validCount)
 
 
 # Compute the orbifold distance matrix
 normalizedOrbifoldDistances = calculateOrbifoldDistances(states)
+
 print("Normalized orbifold distance matrix:")
 print(np.round(normalizedOrbifoldDistances, 3))
 
-print("\nMarkov state transition matrix:")
-print(P)
-
-print("\nOptimization weights:")
 print("wGeometry:", wGeometry)
 print("wHarmony:",  wHarmony)
 print("wAlternation:",  wAlternation)
@@ -151,12 +166,14 @@ for imageDate in IMAGE_DATES:
     print("\nNormalized NDVI spatial-gradient distances:")
     print(np.round(normalizedNdviDistances, 4))
 
-    bestProgression, bestGeometryError, bestHarmonyError, bestTotalError, count = optimizeProgression(
+    (bestProgression, bestGeometryError, bestHarmonyError, bestAlternationError,
+     bestTotalError, count, validCount) = optimizeProgression(
         normalizedNdviDistances,
         normalizedOrbifoldDistances,
         P )
 
     print("\nTotal progressions evaluated:", count)
+    print("Valid non-zero prob progressions:", validCount)
     print("Best chord progression:", bestProgression)
     print("E_geometry:", bestGeometryError)
     print("E_harmony:", bestHarmonyError)
