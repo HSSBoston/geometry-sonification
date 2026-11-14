@@ -1,7 +1,7 @@
 import csv, numpy as np
 from itertools import product
 
-from constants import IMAGE_DATES, DATA_SONIF_DIR
+from constants import IMAGE_DATES, SONIF_DIR
 from ndvi import calculateNdviDistances
 from orbifold import calculateOrbifoldDistances
 
@@ -95,8 +95,8 @@ def calculateAlternationError(progression):
 # The half cadence occupies this event and the preceding event.
 #
 def findHalfCadenceEndIndex(imageDate, numChordEvents):
-    inputCsv = f"{imageDate}-south-regions-chords.csv"
-    with open(DATA_SONIF_DIR / inputCsv, newline="") as file:
+    inputCsv = f"{imageDate}-south-chords.csv"
+    with open(SONIF_DIR / inputCsv, newline="") as file:
         rows = list(csv.DictReader(file))
 
     if len(rows) != numChordEvents:

@@ -3,10 +3,7 @@ PRJ_DIR = pathlib.Path(__file__).resolve().parents[1]  # 2 levels up
 sys.path.append(str(PRJ_DIR))
 
 import csv, math
-
-DATA_DIR = PRJ_DIR / "data" / "sonif-input"
-OUTPUT_DIR = DATA_DIR
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+from constants import SONIF_INPUT_DIR, SONIF_DIR
 
 imageDates = ("20240501", "20240801", "20241101", "20250201")
 
@@ -40,7 +37,7 @@ outputFields = ("eventIndex",
 def loadRegionCsv(imageDate, colsPerRegion):
     inputCsv = f"{imageDate}-{hemisphere}-regions-{colsPerRegion}col.csv"
 
-    with open(DATA_DIR / inputCsv, newline="") as file:
+    with open(SONIF_INPUT_DIR / inputCsv, newline="") as file:
         reader = csv.DictReader(file)
 
         requiredFields = ("region", "longitudeStart", "longitudeEnd") + featureNames
@@ -136,9 +133,9 @@ def generateAdaptiveRegions(coarseRows, fineRows):
 
 
 def saveAdaptiveRegions(imageDate, adaptiveRows):
-    outputCsv = f"{imageDate}-{hemisphere}-regions-chords.csv"
+    outputCsv = f"{imageDate}-{hemisphere}-chords.csv"
 
-    with open(OUTPUT_DIR / outputCsv, "w", newline="") as file:
+    with open(SONIF_DIR / outputCsv, "w", newline="") as file:
         writer = csv.DictWriter(file, fieldnames=outputFields)
         writer.writeheader()
         writer.writerows(adaptiveRows)
