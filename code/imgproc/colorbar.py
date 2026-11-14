@@ -4,8 +4,8 @@ sys.path.append(str(PRJ_DIR))
 
 import cv2, numpy as np
 
-DATA_DIR    = PRJ_DIR / "data" 
-OUTPUT_DIR = PRJ_DIR / "output"
+DATA_DIR    = PRJ_DIR / "data" / "input"
+OUTPUT_DIR = PRJ_DIR / "output" / "greenness"
 
 colorbar = cv2.imread(str(DATA_DIR / "NDVI_colorbar.png"))
 

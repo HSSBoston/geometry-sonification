@@ -9,8 +9,10 @@ DATA_DIR = PRJ_DIR / "data" / "input"
 OUTPUT_DIR = PRJ_DIR / "data" / "greenness"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+#imageDate = "20240501"
 #imageDate = "20240801"
-imageDate = "20250201"
+imageDate = "20241101"
+#imageDate = "20250201"
 
 inputImage         = f"SNPP_VIIRS.{imageDate}.ndvi_w_snow.oceanblue.png"
 outputImage        = f"{imageDate}-32x16.png"
