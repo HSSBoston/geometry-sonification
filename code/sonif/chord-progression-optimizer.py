@@ -12,6 +12,10 @@ firstChord = "I"
 cadences = (
     ("IV", "V", "I"),
     ("II", "V", "I") )
+#     ("IV", "I"),
+#     ("IV","V"),
+#     ("II", "V"),
+#     ("V", "VI") )
 
 wGeometry    = 1.0
 wHarmony     = 0.5
