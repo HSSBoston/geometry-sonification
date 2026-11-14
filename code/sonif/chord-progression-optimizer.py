@@ -64,7 +64,7 @@ def calculateHarmonyError(progression, harmonyErrors):
 
     return totalError / (len(stateSequence) - 1)
 
-# Calculate E_alternation. Penalize extended A-B-A-B alteration patterns in the chord progression.
+# Calculate E_alternation. Penalize extended A-B-A-B alternation patterns in the chord progression.
 #   progression: list of chords expressed as roman numerals; e.g., ["I", "IV", "V"]
 #
 def calculateAlternationError(progression):
@@ -172,7 +172,7 @@ for imageDate in IMAGE_DATES:
         normalizedOrbifoldDistances,
         P )
 
-    print("\nTotal progressions evaluated:", count)
+    print("\nTotal progressions generated:", count)
     print("Valid non-zero prob progressions:", validCount)
     print("Best chord progression:", bestProgression)
     print("E_geometry:", bestGeometryError)
