@@ -150,9 +150,8 @@ def optimizeProgression(ndviDistances, orbifoldDistances, transitionProbabilitie
 
 # Compute the orbifold distance matrix
 normalizedOrbifoldDistances = calculateOrbifoldDistances(states)
-
-print("Normalized orbifold distance matrix:")
-print(np.round(normalizedOrbifoldDistances, 3))
+# print("Normalized orbifold distance matrix:")
+# print(np.round(normalizedOrbifoldDistances, 3))
 
 print("wGeometry:", wGeometry)
 print("wHarmony:",  wHarmony)
