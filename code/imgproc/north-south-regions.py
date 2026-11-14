@@ -233,7 +233,7 @@ def aggregateRegions(imageDate, hemisphere, colsPerRegion, gridData):
             "landGreenness,landGreennessStd,"
             "validFraction,snowFraction,landFraction" ),
         comments="",
-        fmt=["%d", "%.1f", "%.1f"] + ["%.6f"] * 7 )
+        fmt=["%d", "%.2f", "%.2f"] + ["%.6f"] * 7 )
     print(outputCsv, "saved.")
 
 
