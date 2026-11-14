@@ -6,8 +6,7 @@ from music21.chord import Chord
 
 DATA_SONIF_DIR = PRJ_DIR / "data" / "sonif-input"
 
-IMAGE_DATES = ("20240501", "20241101")
-#IMAGE_DATES = ("20240801", "20250201")
+IMAGE_DATES = ("20240501", "20240801", "20241101", "20250201")
 
 # Diatonic triads in C major.
 CHORDS = {

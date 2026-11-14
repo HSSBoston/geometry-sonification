@@ -9,8 +9,7 @@ DATA_DIR = PRJ_DIR / "data" / "sonif-input"
 OUTPUT_DIR = DATA_DIR
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-imageDates = ("20240501", "20241101")
-#imageDates = ("20240801", "20250201")
+imageDates = ("20240501", "20240801", "20241101", "20250201")
 
 hemisphere = "south"
 landThreshold = 0.25
