@@ -18,6 +18,10 @@ chordProgressions = {
     "20241101": progression20241101,
     "20250201": progression20250201 }
 
+wRegister = 1.0
+wContour  = 0.5
+wMovement = 0.5
+
 minPitch   = Pitch("C3").midi
 maxPitch   = Pitch("B5").midi
 firstPitch = Pitch("C4").midi
@@ -103,17 +107,30 @@ def calculateContourError(candidatePitch, previousPitch, landGreenness, previous
     directionError = (1.0 - greennessDirection * pitchDirection) / 2.0
     return contourStrength * directionError
 
+# Calculate E_movement
+#
+def calculateMovementError(candidatePitch, previousPitch):
+    return ((candidatePitch - previousPitch) / 12.0) ** 2
 
+# Calculate E_cadence
+#
+def calculateMovementError(candidatePitch, previousPitch):
+    return calculateMovementError(lastPitch, candidatePitch)
 
 # Calculate the pitch-selection objective.
 #
-def calculatePitchError(candidatePitch, melodyEvent, previousPitch, previousEvent):
-
+def calculatePitchError(candidatePitch, melodyEvent, previousPitch, previousEvent
+                        isPenultimate=False):
     eRegister = calculateRegisterError( candidatePitch, melodyEvent["landGreenness"] )
     
     eContour = calculateContourError( candidatePitch, previousPitch,
                                       melodyEvent["landGreenness"], previousEvent["landGreenness"])
-
+    
+    eMovement = calculateMovementError(candidatePitch, previousPitch)
+    
+    if isPenultimate: eMovement += calculateCadenceError(candidatePitch)
+    
+    return wRegister * eRegister + wContour * eContour + wMovement * eMovement
 
 
 # Evaluate every candidate and retain the lowest-error pitch.
@@ -143,6 +160,7 @@ def generateMelodyPitches(melodyEvents, chordProgression):
     numEvents = len(melodyEvents)
 
     for index, event in enumerate(melodyEvents):
+        isPenultimate = (index == numEvents - 2)
         chordIndex = event["chordEventIndex"] - 1
 
         if not (0 <= chordIndex < len(chordProgression)):
