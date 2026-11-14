@@ -128,6 +128,7 @@ def calculatePitchError(candidatePitch, melodyEvent, previousPitch, previousEven
     
     eMovement = calculateMovementError(candidatePitch, previousPitch)
     
+    # For the penultimate note, also penalize the movement to the fixed final C4.
     if isPenultimate: eMovement += calculateCadenceError(candidatePitch)
     
     return wRegister * eRegister + wContour * eContour + wMovement * eMovement
@@ -196,11 +197,11 @@ def generateMelodyPitches(melodyEvents, chordProgression):
         
         print("    Candidates:", [pitchName(p) for p in candidatePitches] )
 
-        if bestPitch is not None:
-            print("    Selected:", pitchName(bestPitch))
+        if bestError is None:
+            print("    Selected:", pitchName(bestPitch), "(fixed)")
         else:
-            print("    Selected: pending objective function")
-
+            print(f"    Selected: {pitchName(bestPitch)}, E_pitch={bestError:.4f}")
+            
     return selectedPitches
 
 
