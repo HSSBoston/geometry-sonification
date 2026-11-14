@@ -18,7 +18,7 @@ cadences = (
 #     ("V", "VI") )
 
 wGeometry    = 1.0
-wHarmony     = 0.5
+wHarmony     = 1.0
 
 # Markov state transition probabilities
 P = np.array(
@@ -90,8 +90,10 @@ def optimizeProgression(ndviDistances, orbifoldDistances, transitionProbabilitie
     # For each chord state transition, precompute the squared geometry error for
     # every possible pair of chord states
     #   Shape: (numChordEvents-1, 6, 6)
-    transitionErrors = (
-        ndviDistances[:, np.newaxis, np.newaxis] - orbifoldDistances[np.newaxis, :, :]) ** 2
+    transitionErrors = np.abs(
+        ndviDistances[:, np.newaxis, np.newaxis] - orbifoldDistances[np.newaxis, :, :])
+#     transitionErrors = (
+#         ndviDistances[:, np.newaxis, np.newaxis] - orbifoldDistances[np.newaxis, :, :]) ** 2
 
     # Precompute harmony errors for all chord state transitions.
     # Zero-probability transitions are prohibited.
@@ -194,10 +196,14 @@ for imageDate in IMAGE_DATES:
     print("\nRealized orbifold distances:")
     print(np.round(realizedDistances, 4))
 
-    squaredErrors = (normalizedNdviDistances - realizedDistances) ** 2
+    absoluteErrors = np.abs(normalizedNdviDistances - realizedDistances)
+#     squaredErrors = (normalizedNdviDistances - realizedDistances) ** 2
+    
     print("\nGeometry errors per transition:")
-    print(np.round(squaredErrors, 4))
-    print("Mean geometry error:", np.mean(squaredErrors))
+    print(np.round(absoluteErrors, 4))
+    print("Mean geometry error:", np.mean(absoluteErrors))
+#     print(np.round(squaredErrors, 4))
+#     print("Mean geometry error:", np.mean(squaredErrors))
 
     # Display Markov transition probabilities of the best progression
     realizedProbabilities = np.array([
