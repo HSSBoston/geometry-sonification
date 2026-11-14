@@ -33,7 +33,7 @@ def pitchName(midi):
 def loadMelodyEvents(imageDate):
     inputCsv = f"{imageDate}-north-melody-rhythm.csv"
 
-    with open(DATA_SONIF_DIR / inputCsv, newline="") as file:
+    with open(SONIF_DIR / inputCsv, newline="") as file:
         rows = list(csv.DictReader(file))
 
     melodyEvents = []
