@@ -69,17 +69,50 @@ def generateCandidatePitches(chordState):
             candidatePitches.append(midi)
     return candidatePitches
 
+# Calculate E_register
+# 
 def calculateRegisterError(candidatePitch, landGreenness):
     greennessAnchors = [0.0, 0.35, 0.55, 1.0]
     pitchAnchors     = [48,  60,   72,   83]
     preferredPitch = np.interp(landGreenness, greennessAnchors, pitchAnchors)
     return ((candidatePitch - preferredPitch) / 12.0) ** 2
 
+# Calculate E_contour
+#
+def calculateContourError(candidatePitch, previousPitch, landGreenness, previousGreenness):
+    greennessChange = landGreenness - previousGreenness
+    pitchChange     = candidatePitch - previousPitch
+
+    greennessTolerance = 0.03
+    fullStrengthChange = 0.20
+
+    contourStrength = min(
+        max( (abs(greennessChange) - greennessTolerance) / (fullStrengthChange - greennessTolerance),
+             0.0),
+        1.0)
+    if contourStrength == 0:
+        return 0.0
+
+    # Determine greenness and melodic directions.
+    greennessDirection = 1 if greennessChange > 0 else -1
+    
+    if pitchChange > 0:   pitchDirection = 1
+    elif pitchChange < 0: pitchDirection = -1
+    else:                 pitchDirection = 0
+
+    directionError = (1.0 - greennessDirection * pitchDirection) / 2.0
+    return contourStrength * directionError
+
+
+
 # Calculate the pitch-selection objective.
 #
 def calculatePitchError(candidatePitch, melodyEvent, previousPitch, previousEvent):
 
     eRegister = calculateRegisterError( candidatePitch, melodyEvent["landGreenness"] )
+    
+    eContour = calculateContourError( candidatePitch, previousPitch,
+                                      melodyEvent["landGreenness"], previousEvent["landGreenness"])
 
 
 
