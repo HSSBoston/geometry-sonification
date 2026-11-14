@@ -37,16 +37,14 @@ def loadMelodyEvents(imageDate):
         rows = list(csv.DictReader(file))
 
     melodyEvents = []
-
     for index, row in enumerate(rows):
         event = {
-            "eventIndex": int(row["eventIndex"]),
-            "chordEventIndex": int(row["chordEventIndex"]),
-            "startBeat": float(row["startBeat"]),
-            "durationBeats": float(row["durationBeats"]),
-            "landFraction": float(row["landFraction"]),
-            "landGreenness": float(row["landGreenness"])
-        }
+            "eventIndex":      int(  row["eventIndex"]),
+            "chordEventIndex": int(  row["chordEventIndex"]),
+            "startBeat":       float(row["startBeat"]),
+            "durationBeats":   float(row["durationBeats"]),
+            "landFraction":    float(row["landFraction"]),
+            "landGreenness":   float(row["landGreenness"]) }
 
         assert event["eventIndex"] == index + 1
         melodyEvents.append(event)
@@ -54,9 +52,7 @@ def loadMelodyEvents(imageDate):
     assert melodyEvents
     assert melodyEvents[0]["startBeat"] == 0.0
 
-    totalBeats = sum(
-        event["durationBeats"] for event in melodyEvents
-    )
+    totalBeats = sum(event["durationBeats"] for event in melodyEvents)
     assert abs(totalBeats - 16.0) < 1e-9
 
     return melodyEvents
@@ -65,23 +61,16 @@ def loadMelodyEvents(imageDate):
 # Generate all chord-tone candidate pitches between C3 and B5.
 #
 def generateCandidatePitches(chordState):
-    chordPitchClasses = {
-        pitch.pitchClass for pitch in CHORDS[chordState].pitches
-    }
+    chordPitchClasses = { pitch.pitchClass for pitch in CHORDS[chordState].pitches }
 
     candidatePitches = []
-
     for midi in range(minPitch, maxPitch + 1):
         if midi % 12 in chordPitchClasses:
             candidatePitches.append(midi)
-
     return candidatePitches
 
-
 # Calculate the pitch-selection objective.
-# To be implemented later.
-#
-# Potential components:
+# To be implemented later. Potential components:
 #   E_register
 #   E_contour
 #   E_movement
@@ -98,9 +87,7 @@ def optimizePitch(candidatePitches, melodyEvent, previousPitch):
     bestError = float("inf")
 
     for candidatePitch in candidatePitches:
-        ePitch = calculatePitchError(
-            candidatePitch, melodyEvent, previousPitch
-        )
+        ePitch = calculatePitchError( candidatePitch, melodyEvent, previousPitch )
 
         # No objective has been implemented yet.
         if ePitch is None:
@@ -126,14 +113,12 @@ def generateMelodyPitches(melodyEvents, chordProgression):
             raise ValueError("Invalid chordEventIndex.")
 
         chordState = chordProgression[chordIndex]
-
         candidatePitches = generateCandidatePitches(chordState)
 
         # Enforce fixed first and last notes.
         if index == 0:
             assert firstPitch in candidatePitches
             candidatePitches = [firstPitch]
-
         elif index == numEvents - 1:
             assert lastPitch in candidatePitches
             candidatePitches = [lastPitch]
@@ -142,18 +127,13 @@ def generateMelodyPitches(melodyEvents, chordProgression):
         if index == 0:
             bestPitch = firstPitch
             bestError = None
-
         elif index == numEvents - 1:
             bestPitch = lastPitch
             bestError = None
-
         else:
             previousPitch = selectedPitches[-1]
-
-            bestPitch, bestError = optimizePitch(
-                candidatePitches, event, previousPitch
-            )
-
+            bestPitch, bestError = optimizePitch( candidatePitches, event, previousPitch )
+            
         selectedPitches.append(bestPitch)
 
         print(
@@ -161,13 +141,9 @@ def generateMelodyPitches(melodyEvents, chordProgression):
             f"chord={chordState:>3} "
             f"start={event['startBeat']:>4.1f} "
             f"duration={event['durationBeats']:>3.1f} "
-            f"greenness={event['landGreenness']:.3f}"
-        )
-
-        print(
-            "    Candidates:",
-            [pitchName(p) for p in candidatePitches]
-        )
+            f"greenness={event['landGreenness']:.3f}" )
+        
+        print("    Candidates:", [pitchName(p) for p in candidatePitches] )
 
         if bestPitch is not None:
             print("    Selected:", pitchName(bestPitch))
@@ -182,17 +158,10 @@ def generateMelodyPitches(melodyEvents, chordProgression):
 for imageDate in IMAGE_DATES:
     print(f"\nProcessing {imageDate}")
 
-    melodyEvents = loadMelodyEvents(imageDate)
+    melodyEvents     = loadMelodyEvents(imageDate)
     chordProgression = chordProgressions[imageDate]
-
-    selectedPitches = generateMelodyPitches(
-        melodyEvents, chordProgression
-    )
+    selectedPitches = generateMelodyPitches( melodyEvents, chordProgression )
 
     print("Total melody events:", len(melodyEvents))
-
-    print(
-        "Selected pitches:",
-        [pitchName(p) if p is not None else None
-         for p in selectedPitches]
-    )
+    print("Selected pitches:", [pitchName(p) if p is not None else None
+                                for p in selectedPitches] )
