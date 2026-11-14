@@ -2,8 +2,7 @@ import pathlib, sys
 PRJ_DIR = pathlib.Path(__file__).resolve().parents[1]  # 2 levels up
 sys.path.append(str(PRJ_DIR))
 
-import csv
-import math
+import csv, math
 
 DATA_DIR = PRJ_DIR / "data" / "sonif-input"
 OUTPUT_DIR = DATA_DIR
