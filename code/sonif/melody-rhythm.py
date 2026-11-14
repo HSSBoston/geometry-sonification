@@ -7,7 +7,7 @@ from constants import SONIF_INPUT_DIR, SONIF_DIR, IMAGE_DATES
 
 HEMISPHERE = "north"
 
-oceanThreshold = 0.10
+oceanThreshold = 0.15
 landThreshold = 0.25
 lowGreennessThreshold = 0.25
 highGreennessThreshold = 0.55
