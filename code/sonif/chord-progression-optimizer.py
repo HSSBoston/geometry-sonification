@@ -18,7 +18,7 @@ cadences = (
 #     ("V", "VI") )
 
 wGeometry    = 1.0
-wHarmony     = 0.5
+wHarmony     = 0.6
 
 # Markov state transition probabilities
 P = np.array(
