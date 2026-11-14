@@ -2,7 +2,7 @@ import pathlib, sys
 PRJ_DIR = pathlib.Path(__file__).resolve().parents[1]  # 2 levels up
 sys.path.append(str(PRJ_DIR))
 
-import csv
+import csv, numpy as np
 from music21.pitch import Pitch
 from constants import SONIF_DIR, IMAGE_DATES, CHORDS
 
@@ -114,12 +114,12 @@ def calculateMovementError(candidatePitch, previousPitch):
 
 # Calculate E_cadence
 #
-def calculateMovementError(candidatePitch, previousPitch):
+def calculateCadenceError(candidatePitch):
     return calculateMovementError(lastPitch, candidatePitch)
 
 # Calculate the pitch-selection objective.
 #
-def calculatePitchError(candidatePitch, melodyEvent, previousPitch, previousEvent
+def calculatePitchError(candidatePitch, melodyEvent, previousPitch, previousEvent,
                         isPenultimate=False):
     eRegister = calculateRegisterError( candidatePitch, melodyEvent["landGreenness"] )
     
@@ -132,26 +132,20 @@ def calculatePitchError(candidatePitch, melodyEvent, previousPitch, previousEven
     
     return wRegister * eRegister + wContour * eContour + wMovement * eMovement
 
-
 # Evaluate every candidate and retain the lowest-error pitch.
 #
-def optimizePitch(candidatePitches, melodyEvent, previousPitch):
+def optimizePitch(candidatePitches, melodyEvent,previousPitch, previousEvent,
+                  isPenultimate=False):
     bestPitch = None
     bestError = float("inf")
 
     for candidatePitch in candidatePitches:
-        ePitch = calculatePitchError( candidatePitch, melodyEvent, previousPitch )
-
-        # No objective has been implemented yet.
-        if ePitch is None:
-            continue
-
+        ePitch = calculatePitchError( candidatePitch, melodyEvent, previousPitch, previousEvent,
+                                      isPenultimate)
         if ePitch < bestError:
             bestError = ePitch
             bestPitch = candidatePitch
-
     return bestPitch, bestError
-
 
 # Generate the melody pitches for one date.
 #
@@ -186,8 +180,11 @@ def generateMelodyPitches(melodyEvents, chordProgression):
             bestError = None
         else:
             previousPitch = selectedPitches[-1]
-            bestPitch, bestError = optimizePitch( candidatePitches, event, previousPitch )
-            
+            previousEvent = melodyEvents[index - 1]
+
+            bestPitch, bestError = optimizePitch(candidatePitches, event, previousPitch,
+                                                 previousEvent, isPenultimate)
+
         selectedPitches.append(bestPitch)
 
         print(
