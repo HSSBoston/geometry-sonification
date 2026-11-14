@@ -24,8 +24,6 @@ wMovement = 0.5
 
 minPitch   = Pitch("C3").midi
 maxPitch   = Pitch("B5").midi
-firstPitch = Pitch("C4").midi
-lastPitch  = Pitch("C4").midi
 
 def pitchName(midi):
     pitch = Pitch()
@@ -114,13 +112,17 @@ def calculateMovementError(candidatePitch, previousPitch):
 
 # Calculate E_cadence
 #
-def calculateCadenceError(candidatePitch):
+def calculateCadenceError(candidatePitch, lastPitch):
     return calculateMovementError(lastPitch, candidatePitch)
+
+def selectTonicPitch(landGreenness):
+    tonicCandidates = [Pitch("C4").midi, Pitch("C5").midi]
+    return min( tonicCandidates, key=lambda p: calculateRegisterError(p, landGreenness) )
 
 # Calculate the pitch-selection objective.
 #
 def calculatePitchError(candidatePitch, melodyEvent, previousPitch, previousEvent,
-                        isPenultimate=False):
+                        isPenultimate, lastPitch):
     eRegister = calculateRegisterError( candidatePitch, melodyEvent["landGreenness"] )
     
     eContour = calculateContourError( candidatePitch, previousPitch,
@@ -128,21 +130,21 @@ def calculatePitchError(candidatePitch, melodyEvent, previousPitch, previousEven
     
     eMovement = calculateMovementError(candidatePitch, previousPitch)
     
-    # For the penultimate note, also penalize the movement to the fixed final C4.
-    if isPenultimate: eMovement += calculateCadenceError(candidatePitch)
+    # For the penultimate note, also penalize movement to the selected final tonic.
+    if isPenultimate: eMovement += calculateCadenceError(candidatePitch, lastPitch)
     
     return wRegister * eRegister + wContour * eContour + wMovement * eMovement
 
 # Evaluate every candidate and retain the lowest-error pitch.
 #
 def optimizePitch(candidatePitches, melodyEvent,previousPitch, previousEvent,
-                  isPenultimate=False):
+                  isPenultimate, lastPitch):
     bestPitch = None
     bestError = float("inf")
 
     for candidatePitch in candidatePitches:
         ePitch = calculatePitchError( candidatePitch, melodyEvent, previousPitch, previousEvent,
-                                      isPenultimate)
+                                      isPenultimate, lastPitch)
         if ePitch < bestError:
             bestError = ePitch
             bestPitch = candidatePitch
@@ -153,6 +155,10 @@ def optimizePitch(candidatePitches, melodyEvent,previousPitch, previousEvent,
 def generateMelodyPitches(melodyEvents, chordProgression):
     selectedPitches = []
     numEvents = len(melodyEvents)
+    
+    # Select tonic pitches for the first and last melody notes.
+    firstPitch = selectTonicPitch(melodyEvents[0]["landGreenness"])
+    lastPitch  = selectTonicPitch(melodyEvents[-1]["landGreenness"])    
 
     for index, event in enumerate(melodyEvents):
         isPenultimate = (index == numEvents - 2)
@@ -184,7 +190,7 @@ def generateMelodyPitches(melodyEvents, chordProgression):
             previousEvent = melodyEvents[index - 1]
 
             bestPitch, bestError = optimizePitch(candidatePitches, event, previousPitch,
-                                                 previousEvent, isPenultimate)
+                                                 previousEvent, isPenultimate, lastPitch)
 
         selectedPitches.append(bestPitch)
 
