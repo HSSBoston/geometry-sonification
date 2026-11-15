@@ -7,10 +7,18 @@ from music21.pitch import Pitch
 from constants import SONIF_DIR, IMAGE_DATES, CHORDS
 
 # Chord progressions for the four dates.
-progression20240501 = ("I", "I", "IV", "I", "V", "I", "VI", "IV", "II", "V", "I")
-progression20240801 = ("I", "I", "IV", "I", "V", "I", "VI", "IV", "II", "V", "I")
-progression20241101 = ("I", "I", "I", "I", "V", "I", "VI", "IV", "II", "V", "I")
-progression20250201 = ("I", "I", "IV", "I", "V", "I", "VI", "IV", "II", "V", "I")
+# Pareto-optimal
+progression20240501 = ("I", "I", "IV", "I",  "V", "I",  "IV", "VI", "IV", "V", "I")
+progression20240801 = ("I", "I", "IV", "I",  "V", "VI", "IV", "VI", "II", "V", "I")
+progression20241101 = ("I", "I", "VI", "II", "V", "I",  "VI", "IV", "II", "V", "I")
+progression20250201 = ("I", "I", "VI", "II", "V", "I",  "IV", "VI", "IV", "V", "I")
+
+# weighted-sum-optimal
+# progression20240501 = ("I", "I", "IV", "I", "V", "I", "VI", "IV", "II", "V", "I")
+# progression20240801 = ("I", "I", "IV", "I", "V", "I", "VI", "IV", "II", "V", "I")
+# progression20241101 = ("I", "I", "I", "I", "V", "I", "VI", "IV", "II", "V", "I")
+# progression20250201 = ("I", "I", "IV", "I", "V", "I", "VI", "IV", "II", "V", "I")
+
 
 chordProgressions = {
     "20240501": progression20240501,
